@@ -1,0 +1,11 @@
+# IP封禁规则
+# 由 Nginx IP Copilot 自动生成
+
+# 单个IP封禁
+{ip_rules}
+
+# IP范围封禁
+{ip_range_rules}
+
+# 地理位置封禁
+{geo_rules} 
