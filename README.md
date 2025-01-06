@@ -101,11 +101,11 @@ IP 规则批量管理
 
 ## 系统架构图
 
-![img.png](img.png)
+![img.png](./README_IMAGE/img.png)
 
 ## 前后端交互
 
-![img_1.png](img_1.png)
+![img_1.png](./README_IMAGE/img_1.png)
 
 ## 接口设计
 
