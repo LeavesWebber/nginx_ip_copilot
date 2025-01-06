@@ -1,28 +1,47 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useStore } from 'vuex'
+
+const store = useStore()
+const nginxStatus = ref(null)
+
+// TODO: Implement dashboard data fetching
+const fetchDashboardData = async () => {
+  try {
+    await store.dispatch('nginx/getStatus')
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
+}
+</script>
+
 <template>
   <div class="dashboard">
-    <el-container>
-      <el-aside width="200px">
-        <el-menu>
-          <el-menu-item index="1">IP 规则管理</el-menu-item>
-          <el-menu-item index="2">地理位置规则</el-menu-item>
-          <el-menu-item index="3">系统设置</el-menu-item>
-        </el-menu>
-      </el-aside>
-      
-      <el-main>
-        <router-view></router-view>
-      </el-main>
-    </el-container>
+    <el-row :gutter="20">
+      <el-col :span="8">
+        <el-card>
+          <template #header>System Status</template>
+          <!-- Add system status information -->
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card>
+          <template #header>Active Rules</template>
+          <!-- Add active rules summary -->
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card>
+          <template #header>Recent Activities</template>
+          <!-- Add recent activities list -->
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  name: 'Dashboard',
-  setup() {
-    // 组件逻辑
-  }
-})
-</script> 
+<style scoped>
+.dashboard {
+  padding: 20px;
+}
+</style>
