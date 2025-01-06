@@ -27,7 +27,7 @@ userid; userps；  json
 
 ### （可选功能）调用 BadIP api ，禁止数据库里的高危 ip
 返回布尔值 boolen
-[badIP]([AbuseIPDB - IP address abuse reports - Making the Internet safer, one IP at a time](https://www.abuseipdb.com/))
+用到的api 网站：[AbuseIPDB](https://www.abuseipdb.com/)
 
 ## 项目实现
 ### 前端
