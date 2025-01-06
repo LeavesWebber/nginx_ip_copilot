@@ -49,7 +49,7 @@ userid; userps；  json
 - Element Plus UI 框架  
 - Axios 处理 API 请求  
 - Vuex 状态管理  
-- ECharts 数据可视化  
+
 
 #### 后端
 ##### 技术
@@ -86,38 +86,11 @@ IP 规则批量管理
 高级数据可视化
 
 ## 系统架构图
-```mermaid  
-graph TB
-    subgraph Frontend["前端 (Vue/React)"]
-        UI[用户界面]
-        Store[状态管理]
-        API_Client[API 客户端]
-    end
 
-    subgraph Backend["后端 (Go/Python)"]
-        API[RESTful API]
-        Auth[认证中间件]
-        NginxManager[Nginx配置管理器]
-        IPService[IP 服务]
-        subgraph Storage
-            DB[(数据库/JSON)]
-            NginxConf[Nginx配置文件]
-        end
-    end
-
-    UI --> Store
-    Store --> API_Client
-    API_Client --> API
-    API --> Auth
-    Auth --> NginxManager
-    Auth --> IPService
-    IPService --> DB
-    NginxManager --> NginxConf
-
-    ExternalAPI[外部 API]
-    IPService --> ExternalAPI
-```
 ![img.png](img.png)
+
+## 前后端交互
+![img_1.png](img_1.png)
 
 ## 接口设计  
 认证相关接口
