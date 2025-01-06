@@ -12,12 +12,10 @@ userid; userps；  json
 
 ### GepIP 筛选
 发送用户设置的位置代码； json
-
+查询 ip 信息的 api：`https://api.vore.top/api/IPdata?ip=输入你要查询的ip地址`
 
 ### 用户自定义 ip 过滤规则
 发送的字段：  array，一系列 ipv4 地址
-
-
 
 ### 用户查询已有的规则
 请求返回 array ，前端格式化成 table 给用户
@@ -27,7 +25,8 @@ userid; userps；  json
 
 ### （可选功能）调用 BadIP api ，禁止数据库里的高危 ip
 返回布尔值 boolen
-用到的api 网站：[AbuseIPDB](https://www.abuseipdb.com/)
+用到的api 网站：[AbuseIPDB](https://www.abuseipdb.com/)  
+
 
 ## 项目实现
 ### 前端
