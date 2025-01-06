@@ -1,0 +1,26 @@
+{
+	"nodes":[
+		{"id":"28d2d0687b19b5cc","type":"group","x":43,"y":-1870,"width":332,"height":1510,"label":"后端"},
+		{"id":"3fc46414c6fb749e","type":"group","x":-480,"y":-1880,"width":375,"height":1280,"label":"前端"},
+		{"id":"ed53e6ddade50b00","type":"text","text":"匹配数据库或者json 文件里的字符串","x":70,"y":-1755,"width":285,"height":130,"color":"5"},
+		{"id":"63ba36aae7ec6257","type":"text","text":"用户登录","x":-375,"y":-1720,"width":250,"height":60,"color":"3"},
+		{"id":"f7610c3fa86476a1","type":"text","text":"GeoIP","x":-375,"y":-1540,"width":165,"height":60,"color":"3"},
+		{"id":"1592878a66b6777f","type":"text","text":"用户删除已有规则","x":-460,"y":-940,"width":250,"height":60,"color":"3"},
+		{"id":"ecb8433ee0f84001","type":"text","text":"用户决定是否启用高危 ip 过滤","x":-460,"y":-740,"width":250,"height":120,"color":"3"},
+		{"id":"50aa4edb62c0a1aa","type":"text","text":"用户查询已有规则","x":-417,"y":-1180,"width":250,"height":60,"color":"3"},
+		{"id":"d3b909d05370f98f","type":"text","text":"用户自定义 ip","x":-390,"y":-1360,"width":180,"height":60,"color":"3"},
+		{"id":"17c27ec37d3af67a","type":"text","text":"若是，则 enable api [AbuseIPDB](https://www.abuseipdb.com/)","x":63,"y":-680,"width":250,"height":300,"color":"5"},
+		{"id":"1291f443ca2d1797","type":"text","text":"接收区块代码，修改对应规则","x":105,"y":-1565,"width":250,"height":110,"color":"5"},
+		{"id":"97119b829e5ef92a","type":"text","text":"接收 ip 字符串，添加进nginx配置文件","x":105,"y":-1375,"width":250,"height":90,"color":"5"},
+		{"id":"5d74138313a2cc80","type":"text","text":"格式化返回配置文件里已有的 ip 规则和地理位置规则","x":105,"y":-1208,"width":250,"height":176,"color":"5"},
+		{"id":"42811834aa7c2b47","type":"text","text":"接收 array，然后从配置文件里删除规则","x":105,"y":-965,"width":250,"height":170,"color":"5"}
+	],
+	"edges":[
+		{"id":"5bf2b9ff096384eb","fromNode":"63ba36aae7ec6257","fromSide":"right","toNode":"ed53e6ddade50b00","toSide":"left","label":"json：\nuserID\nuserPW"},
+		{"id":"73c748ab152ec6af","fromNode":"f7610c3fa86476a1","fromSide":"right","toNode":"1291f443ca2d1797","toSide":"left","label":"json：\n区块代码"},
+		{"id":"36c08d427b0a5999","fromNode":"d3b909d05370f98f","fromSide":"right","toNode":"97119b829e5ef92a","toSide":"left","label":"json：\n含有ip 字符串的 array"},
+		{"id":"d132a0dce85ac347","fromNode":"5d74138313a2cc80","fromSide":"left","toNode":"50aa4edb62c0a1aa","toSide":"right","label":"json：\nipTables array\nGeoTables array"},
+		{"id":"27ed56b3353299d5","fromNode":"1592878a66b6777f","fromSide":"right","toNode":"42811834aa7c2b47","toSide":"left","label":"json：\nipTables array\nGeoTables array"},
+		{"id":"0f25ff93c5b3533f","fromNode":"ecb8433ee0f84001","fromSide":"right","toNode":"17c27ec37d3af67a","toSide":"left","label":"boolen"}
+	]
+}
