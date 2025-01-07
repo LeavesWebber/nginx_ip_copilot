@@ -26,4 +26,13 @@ npm run dev
 你可以在 [frontend/src/api/mock.ts](frontend/src/api/mock.ts) 里修改这些东西。
 
 ## 2. 启动后端
-（拜托后端来个人把这里写好捏）
+### 2.1 依赖导入
+先确认后端backend文件夹下pom.xml中的依赖导入没问题。
+### 2.2 数据库
+可用Navicat Premium等相关数据库管理工具。  
+mysql数据库连接，连接名称随意，主机localhost，端口3306，用户名root，密码123。  
+连接后创建数据库（名为backend，字符集选择了utf8mb4，排序规则选择了utf8mb4_general_ci）。  
+### 2.3 运行
+运行的Java类是backend/src/main/java/org/example/backend/BackendApplication.java。  
+运行后，将监听本地的8088端口，等待并处理来自该端口的HTTP请求。  
+首次运行会在自动数据库中建表。
