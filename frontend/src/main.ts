@@ -6,10 +6,10 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 
-// Import mock in development
-if (import.meta.env.DEV) {
+// 实际开发时，需要注释掉以下代码
+/* if (import.meta.env.DEV) {
   await import('./api/mock')
-}
+} */
 
 const app = createApp(App)
 

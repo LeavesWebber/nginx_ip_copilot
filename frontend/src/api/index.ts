@@ -9,11 +9,14 @@ export const api = axios.create({
 })
 
 // Auth APIs
-export const login = (data: { username: string; password: string }) => 
+export const login = (data: { userId: string; userPassword: string }) => 
   api.post('/auth/login', data)
 
 export const logout = () => 
   api.post('/auth/logout')
+
+export const getUserInfo = () => 
+  api.get('/auth/info')
 
 // IP Rules APIs
 export const getIPRules = () => 
@@ -48,3 +51,27 @@ export const getNginxStatus = () =>
 
 export const reloadNginx = () => 
   api.post('/nginx/reload')
+
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)

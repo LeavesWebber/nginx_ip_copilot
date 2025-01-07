@@ -63,10 +63,9 @@ userid; userps；  json
 
 ##### 技术
 
-- Python FastAPI
+- java spring boot
 - Mysql 数据库 （可选）
-- Redis 缓存 （可选）
-- 使用 Docker 容器化部署 （可选）
+
 
 ##### 关键
 
@@ -107,62 +106,6 @@ IP 规则批量管理
 
 ![img_1.png](./README_IMAGE/img_1.png)
 
-## 接口设计
-
-认证相关接口
-
-```
-POST   /api/auth/login           # 用户登录
-POST   /api/auth/logout          # 用户登出
-GET    /api/auth/info            # 获取当前用户信息
-```
-
-Nginx配置相关接口
-
-```
-GET    /api/nginx/config         # 获取当前配置
-POST   /api/nginx/config/path    # 设置nginx配置文件路径
-POST   /api/nginx/reload         # 重新加载nginx配置
-GET    /api/nginx/status         # 获取nginx运行状态
-GET    /api/nginx/backups        # 获取配置备份列表
-POST   /api/nginx/backups/restore/{backup_id}  # 恢复指定备份
-```
-
-IP规则管理接口
-
-```
-GET    /api/ip-rules            # 获取所有IP规则
-POST   /api/ip-rules            # 添加新的IP规则
-DELETE /api/ip-rules/{rule_id}  # 删除指定IP规则
-PUT    /api/ip-rules/{rule_id}  # 修改指定IP规则
-POST   /api/ip-rules/batch      # 批量添加IP规则
-DELETE /api/ip-rules/batch      # 批量删除IP规则
-```
-
-地理位置规则接口
-
-```
-GET    /api/geo-rules           # 获取所有地理位置规则
-POST   /api/geo-rules           # 添加新的地理位置规则
-DELETE /api/geo-rules/{rule_id} # 删除指定地理位置规则
-PUT    /api/geo-rules/{rule_id} # 修改指定地理位置规则
-```
-
-AbuseIPDB相关接口
-
-```
-POST   /api/abuseipdb/enable    # 启用AbuseIPDB功能
-POST   /api/abuseipdb/disable   # 禁用AbuseIPDB功能
-GET    /api/abuseipdb/status    # 获取AbuseIPDB功能状态
-GET    /api/abuseipdb/blacklist # 获取当前AbuseIPDB黑名单
-```
-
-系统管理接口
-
-```
-GET    /api/system/logs         # 获取操作日志
-GET    /api/system/stats        # 获取系统统计信息
-```
 
 ### 项目结构
 
@@ -184,92 +127,6 @@ nginx_ip_copilot/
 │   └── package.json
 │
 ├── backend/                         # 后端项目目录
-│   ├── app/
-│   │   ├── api/                    # API路由
-│   │   │   ├── __init__.py
-│   │   │   ├── auth.py            # 认证相关
-│   │   │   ├── ip_rules.py        # IP规则相关
-│   │   │   └── geo_rules.py       # 地理规则相关
-│   │   ├── core/                  # 核心功能
-│   │   │   ├── __init__.py
-│   │   │   ├── config.py          # 配置管理
-│   │   │   ├── security.py        # 安全相关
-│   │   │   └── dependencies.py    # 依赖注入
-│   │   ├── services/              # 业务逻辑
-│   │   │   ├── __init__.py
-│   │   │   ├── nginx_service.py   # Nginx配置服务
-│   │   │   ├── geoip_service.py   # GeoIP服务
-│   │   │   └── abuseipdb_service.py  # AbuseIPDB服务
-│   │   ├── models/                # 数据模型
-│   │   │   ├── __init__.py
-│   │   │   └── schemas.py         # Pydantic模型
-│   │   └── utils/                 # 工具函数
-│   │       ├── __init__.py
-│   │       ├── nginx_parser.py    # Nginx配置解析
-│   │       └── validators.py      # 数据验证
-│   ├── tests/                     # 测试目录
-│   │   ├── __init__.py
-│   │   ├── test_api/
-│   │   └── test_services/
-│   ├── alembic/                   # 数据库迁移
-│   ├── logs/                      # 日志目录
-│   ├── requirements.txt           # 依赖包
-│   └── main.py                    # 入口文件
-│
-├── nginx/                         # Nginx配置模板
-│   ├── templates/
-│   │   ├── ip_block.conf.template
-│   │   └── geo_block.conf.template
-│   └── scripts/
-│       └── reload.sh
-│
-├── docker/                        # Docker配置
-│   ├── frontend/
-│   │   └── Dockerfile
-│   └── backend/
-│       └── Dockerfile
-│
-├── docs/                          # 文档
-│   ├── api.md
-│   ├── deployment.md
-│   └── development.md
-│
-├── docker-compose.yml            # Docker编排配置
-├── .env.example                  # 环境变量示例
-├── .gitignore
-└── README.md
+
 ```
 
-### 数据结构
-
-```json
-{
-  "ip_rules": [
-    {
-      "id": "rule_001",
-      "ip": "1.2.3.4",
-      "type": "single_ip",
-      "comment": "手动添加的封禁IP",
-      "created_at": "2024-03-20T10:00:00Z",
-      "status": "active"
-    },
-    {
-      "id": "rule_002",
-      "ip_range": "192.168.1.0/24",
-      "type": "ip_range",
-      "comment": "封禁整个子网",
-      "created_at": "2024-03-20T10:00:00Z",
-      "status": "active"
-    }
-  ],
-  "geo_rules": [
-    {
-      "id": "geo_001",
-      "country_code": "XX",
-      "comment": "封禁某个国家",
-      "created_at": "2024-03-20T10:00:00Z",
-      "status": "active"
-    }
-  ]
-}
-```

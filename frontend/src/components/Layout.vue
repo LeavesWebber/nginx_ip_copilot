@@ -9,8 +9,14 @@ const store = useStore()
 const activeMenu = ref(router.currentRoute.value.name)
 
 const handleLogout = async () => {
-  await store.dispatch('auth/logout')
-  router.push({ name: 'login' })
+  try {
+    await store.dispatch('auth/logout')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    // 即使出错也跳转到登录页
+    router.push('/login')
+  }
 }
 </script>
 
