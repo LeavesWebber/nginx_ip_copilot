@@ -6,6 +6,11 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 
+// Import mock in development
+if (import.meta.env.DEV) {
+  await import('./api/mock')
+}
+
 const app = createApp(App)
 
 // Register Element Plus Icons
