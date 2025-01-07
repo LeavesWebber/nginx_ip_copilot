@@ -26,4 +26,4 @@ npm run dev
 你可以在 [frontend/src/api/mock.ts](frontend/src/api/mock.ts) 里修改这些东西。
 
 ## 2. 启动后端
-（拜托后端来个人把这里写好捏，怎么都没人推送😫）
+（拜托后端来个人把这里写好捏）
