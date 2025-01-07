@@ -22,4 +22,16 @@ app.use(ElementPlus)
 app.use(router)
 app.use(store)
 
+// 添加控制台错误过滤
+const originalConsoleError = console.error;
+console.error = function(...args) {
+    // 过滤掉Chrome扩展相关的错误
+    const errorMessage = args.join(' ');
+    if (errorMessage.includes('chrome-extension://') || 
+        errorMessage.includes('mfbcdcnpokpoajjciilocoachedjkima')) {
+        return;
+    }
+    originalConsoleError.apply(console, args);
+};
+
 app.mount('#app')

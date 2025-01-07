@@ -22,16 +22,16 @@ const errors = reactive({
 })
 
 const handleLogin = async () => {
-  errors.userId = !loginForm.value.userId ? 'userId is required' : ''
-  errors.userPassword = !loginForm.value.userPassword ? 'Password is required' : ''
+  errors.userId = !loginForm.value.userId ? '请输入用户名' : ''
+  errors.userPassword = !loginForm.value.userPassword ? '请输入密码' : ''
 
   if (!errors.userId && !errors.userPassword) {
     isLoading.value = true
     try {
       await store.dispatch('auth/login', loginForm.value)
       router.push('/dashboard')
-    } catch (error) {
-      ElMessage.error('Login failed')
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '登录失败')
     } finally {
       isLoading.value = false
     }
@@ -46,18 +46,18 @@ const handleLogin = async () => {
       <h1>Nginx IP Copilot</h1>
       <form @submit.prevent="handleLogin" class="login-form">
         <FormInput
-          v-model="loginForm.username"
+          v-model="loginForm.userId"
           id="username"
           label="Username"
           type="text"
-          :error="errors.username"
+          :error="errors.userId"
         />
         <FormInput
-          v-model="loginForm.password"
+          v-model="loginForm.userPassword"
           id="password"
           label="Password"
           type="password"
-          :error="errors.password"
+          :error="errors.userPassword"
         />
         <AppButton
           type="submit"

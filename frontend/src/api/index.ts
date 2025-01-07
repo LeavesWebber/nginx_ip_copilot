@@ -52,6 +52,7 @@ export const getNginxStatus = () =>
 export const reloadNginx = () => 
   api.post('/nginx/reload')
 
+// 请求拦截器：添加token
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
@@ -60,11 +61,10 @@ api.interceptors.request.use(
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  }
+  error => Promise.reject(error)
 )
 
+// 响应拦截器：处理401错误
 api.interceptors.response.use(
   response => response,
   error => {

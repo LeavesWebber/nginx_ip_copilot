@@ -7,9 +7,18 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8088',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        changeOrigin: true
       }
+    },
+    hmr: {
+      overlay: false
+    },
+    watch: {
+      // 忽略特定的请求模式
+      ignored: [
+        '**/chrome-extension/**',
+        '**/mfbcdcnpokpoajjciilocoachedjkima/**'
+      ]
     }
   }
 })
