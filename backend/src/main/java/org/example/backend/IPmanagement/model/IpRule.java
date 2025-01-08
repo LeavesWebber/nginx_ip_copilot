@@ -1,23 +1,22 @@
 package org.example.backend.IPmanagement.model;
 
+import java.time.LocalDateTime;
+
 public class IpRule {
     private String id;
     private String ip;
-    private String type;
+    private String type;  // single_ip 或 ip_range
     private String comment;
-    private String createdAt;
+    private LocalDateTime createdAt;
     private String status;
+    private String ipRange;  // 用于IP范围类型的规则
 
-    public IpRule(String id, String ip, String type, String comment, String createdAt, String status) {
-        this.id = id;
-        this.ip = ip;
-        this.type = type;
-        this.comment = comment;
-        this.createdAt = createdAt;
-        this.status = status;
+    public IpRule() {
+        this.createdAt = LocalDateTime.now();
+        this.status = "active";
     }
 
-
+    // Getters and Setters
     public String getId() {
         return id;
     }
@@ -50,11 +49,11 @@ public class IpRule {
         this.comment = comment;
     }
 
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
@@ -64,6 +63,14 @@ public class IpRule {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getIpRange() {
+        return ipRange;
+    }
+
+    public void setIpRange(String ipRange) {
+        this.ipRange = ipRange;
     }
 }
 

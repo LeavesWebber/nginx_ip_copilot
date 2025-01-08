@@ -107,26 +107,3 @@ IP 规则批量管理
 ![img_1.png](./README_IMAGE/img_1.png)
 
 
-### 项目结构
-
-```
-nginx_ip_copilot/
-├── frontend/                         # 前端项目目录
-│   ├── src/
-│   │   ├── assets/                  # 静态资源
-│   │   ├── components/              # Vue组件
-│   │   │   ├── Login.vue           # 登录组件
-│   │   │   ├── Dashboard.vue       # 主面板
-│   │   │   ├── IPRules.vue         # IP规则管理
-│   │   │   ├── GeoRules.vue        # 地理位置规则
-│   │   │   └── Settings.vue        # 设置页面
-│   │   ├── api/                    # API请求
-│   │   │   └── index.js
-│   │   ├── store/                  # Vuex状态管理
-│   │   └── router/                 # Vue路由
-│   └── package.json
-│
-├── backend/                         # 后端项目目录
-
-```
-

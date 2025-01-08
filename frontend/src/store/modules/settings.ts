@@ -1,4 +1,5 @@
-import { getSettings, updateSettings } from '../../api'
+import { getSettings, updateSettings, validateNginxConfigPath } from '../../api'
+import { Commit } from 'vuex'
 
 interface SettingsState {
   nginxConfigPath: string
@@ -22,14 +23,20 @@ export default {
   },
 
   actions: {
-    async fetchSettings({ commit }) {
+    async fetchSettings({ commit }: { commit: Commit }) {
       const { data } = await getSettings()
       commit('SET_SETTINGS', data)
       return data
     },
-    async saveSettings({ commit }, settings) {
-      await updateSettings(settings)
-      commit('SET_SETTINGS', settings)
+    async validatePath(_: { commit: Commit }, path: string) {
+      const { data } = await validateNginxConfigPath(path)
+      return data
+    },
+    async saveSettings({ commit }: { commit: Commit }, settings: SettingsState) {
+      // 更新设置
+      const { data } = await updateSettings(settings)
+      commit('SET_SETTINGS', data)
+      return data
     }
   }
 }

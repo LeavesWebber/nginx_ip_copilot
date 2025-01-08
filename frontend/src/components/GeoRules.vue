@@ -79,13 +79,211 @@ onMounted(fetchGeoRules)
 </template>
 
 <style scoped>
+/* 容器样式 */
 .geo-rules {
-  padding: 20px;
+  padding: 24px;
+  min-width: 1000px;
+  width: 100%;
+  position: relative;
 }
 
+/* 卡片样式 */
+.el-card {
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),
+              0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  min-width: 1000px;
+  width: 100%;
+}
+
+/* 卡片头部样式 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px 24px;
+  border-bottom: none;
+  height: 80px;
+}
+
+/* 标题样式 */
+.header span {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(120deg, #2563eb, #3b82f6, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+  position: relative;
+  padding-bottom: 4px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+}
+
+/* 添加按钮样式 */
+:deep(.el-button) {
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+}
+
+/* 按钮悬浮效果 */
+:deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+/* 按钮点击效果 */
+:deep(.el-button:active) {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+}
+
+/* 表格样式 */
+:deep(.el-table) {
+  min-width: 900px;
+  width: 100%;
+  margin: 16px;
+}
+
+/* 弹出框样式 */
+:deep(.el-dialog) {
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* 弹出框头部样式 */
+:deep(.el-dialog__header) {
+  padding: 20px 24px;
+  margin: 0;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+/* 弹出框内容区域样式 */
+:deep(.el-dialog__body) {
+  padding: 24px;
+  background: #ffffff;
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
+}
+
+/* 弹出框底部按钮区域样式 */
+:deep(.el-dialog__footer) {
+  padding: 20px 24px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 遮罩层样式 */
+:deep(.el-overlay) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2000;
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow: auto;
+}
+
+/* 小屏幕适配 */
+@media screen and (max-width: 1460px) {
+  :deep(.el-dialog) {
+    position: fixed !important;
+    width: 500px !important;
+    min-width: 500px !important;
+    max-width: 500px !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+  }
+
+  /* 确保遮罩层覆盖整个可滚动区域 */
+  :deep(.el-overlay) {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    min-width: 1460px;  /* 与页面最小宽度一致 */
+  }
+}
+
+/* 大屏幕适配 */
+@media screen and (min-width: 1920px) {
+  :deep(.el-dialog) {
+    position: fixed !important;
+    width: 500px !important;
+    min-width: 500px !important;
+    max-width: 500px !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+  }
+}
+
+/* 弹出框按钮样式 */
+:deep(.el-dialog__footer .el-button) {
+  margin: 0;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 24px;
+}
+
+/* 取消按钮样式 */
+:deep(.el-dialog__footer .el-button:first-child) {
+  background: #f1f5f9;
+  color: #475569;
+  box-shadow: none;
+  border: none;
+}
+
+:deep(.el-dialog__footer .el-button:first-child:hover) {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+/* 确定按钮样式 */
+:deep(.el-dialog__footer .el-button:last-child) {
+  margin-left: 0;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+}
+
+:deep(.el-dialog__footer .el-button:last-child:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
 }
 </style>

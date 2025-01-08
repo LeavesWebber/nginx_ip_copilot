@@ -1,4 +1,5 @@
-import { getNginxStatus, reloadNginx } from '../../api'
+import { getNginxStatus, reloadNginx, updateNginxConfig } from '../../api'
+import { Commit } from 'vuex'
 
 interface NginxState {
   status: any | null
@@ -23,7 +24,7 @@ export default {
   },
 
   actions: {
-    async getStatus({ commit }) {
+    async getStatus({ commit }: { commit: Commit }) {
       const { data } = await getNginxStatus()
       commit('SET_STATUS', data)
       commit('UPDATE_CONFIG', data.config)
@@ -32,10 +33,15 @@ export default {
     async reload() {
       await reloadNginx()
     },
-    async updateStatus({ commit }) {
+    async updateStatus({ commit }: { commit: Commit }) {
       const response = await getNginxStatus()
       commit('SET_STATUS', response.data)
       commit('UPDATE_CONFIG', response.data.config)
+    },
+    async updateConfig({ commit }: { commit: Commit }, config: string) {
+      const { data } = await updateNginxConfig(config)
+      commit('UPDATE_CONFIG', data.config)
+      return data
     }
   }
 }

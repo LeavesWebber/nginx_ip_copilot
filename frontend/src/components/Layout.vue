@@ -92,30 +92,32 @@ const handleLogout = async () => {
   box-sizing: border-box;
 }
 
-/* 容器样式 */
+/* 主容器样式 */
 .app-container {
   display: flex;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  background: linear-gradient(-45deg, var(--gradient-background-start), var(--gradient-background-end));
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
+  min-width: 1460px;  /* 设置最小宽度 = 侧边栏(260px) + 主内容区(1200px) */
+  max-width: 1460px;  /* 设置最大宽度 */
+  min-height: 800px;  /* 设置最小高度 */
+  position: relative;
+  background: #ffffff;
+  margin: 0 auto;  /* 居中显示 */
 }
 
 /* 侧边栏样式 */
 .sidebar {
   width: 260px;
+  min-width: 260px;
+  max-width: 260px;
   height: 100%;
-  background: var(--card-background);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
   z-index: 1000;
   flex-shrink: 0;
+  position: fixed;  /* 固定位置 */
+  left: auto;  /* 自动计算左侧位置 */
 }
 
 .sidebar-content {
@@ -163,23 +165,31 @@ const handleLogout = async () => {
   transform: translateX(5px);
 }
 
-/* 主要内容区域样式 */
+/* 主要内容区域 */
 .main-area {
-  flex-grow: 1;
+  flex: 1;
+  width: 1200px;  /* 设置固定宽度 */
+  min-width: 1200px;
+  max-width: 1200px;
   height: 100%;
+  margin-left: 260px;  /* 留出侧边栏的空间 */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 /* 头部样式 */
 .header {
   height: 70px;
-  background: var(--card-background);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0 2rem;
-  flex-shrink: 0;
+  min-height: 70px;
+  width: 1200px;
+  min-width: 1200px;
+  max-width: 1200px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 24px;
+  position: fixed;
+  top: 0;
+  z-index: 999;
 }
 
 .header-content {
@@ -215,12 +225,15 @@ const handleLogout = async () => {
   transform: translateY(0);
 }
 
-/* 主要内容区域样式 */
+/* 内容区域样式 */
 .main-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 2rem;
-  position: relative;
+  flex: 1;
+  width: 1200px;
+  min-width: 1200px;
+  max-width: 1200px;
+  padding-top: 70px;  /* 为固定的header留出空间 */
+  overflow-x: hidden;  /* 隐藏横向滚动条 */
+  overflow-y: auto;  /* 允许纵向滚动 */
 }
 
 /* 页面切换动画 */
@@ -234,40 +247,31 @@ const handleLogout = async () => {
   opacity: 0;
 }
 
-/* 背景动画 */
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
+/* 确保所有卡片和表格的最小宽度 */
+:deep(.el-card), :deep(.el-table) {
+  min-width: fit-content;
+}
+
+/* 小屏幕处理 */
+@media screen and (max-width: 1460px) {
+  body {
+    overflow-x: auto !important;  /* 允许横向滚动 */
   }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
+
+  .app-container {
+    width: 1460px;  /* 保持固定宽度 */
+    min-width: 1460px;
+    position: relative;
   }
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
+/* 大屏幕处理 */
+@media screen and (min-width: 1920px) {
   .app-container {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    height: auto;
-  }
-
-  .main-area {
-    height: calc(100% - 260px);
-  }
-
-  .header {
-    padding: 0 1rem;
-  }
-
-  .main-content {
-    padding: 1rem;
+    margin: 0 auto;  /* 居中显示 */
+    width: 1460px;  /* 保持固定宽度 */
+    min-width: 1460px;
+    max-width: 1460px;
   }
 }
 </style>

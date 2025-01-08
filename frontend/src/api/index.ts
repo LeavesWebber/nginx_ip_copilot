@@ -41,10 +41,10 @@ export const deleteGeoRule = (ruleId: string) =>
 
 // Settings APIs
 export const getSettings = () => 
-  api.get('/system/settings')
+  api.get('/nginx/settings')
 
 export const updateSettings = (settings: any) => 
-  api.post('/system/settings', settings)
+  api.post('/nginx/settings', settings)
 
 // Nginx APIs
 export const getNginxStatus = () => 
@@ -52,6 +52,12 @@ export const getNginxStatus = () =>
 
 export const reloadNginx = () => 
   api.post('/nginx/reload')
+
+export const updateNginxConfig = (config: string) => 
+  api.post('/nginx/config', { content: config })
+
+export const validateNginxConfigPath = (path: string) =>
+  api.post('/nginx/config/path/validate', { path })
 
 // 请求拦截器：添加token
 api.interceptors.request.use(

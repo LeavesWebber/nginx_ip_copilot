@@ -8,8 +8,10 @@
   --error-color: #ef4444;
   --gradient-start: #4f46e5;
   --gradient-end: #06b6d4;
-  --gradient-background-start: #665533;
-  --gradient-background-end: #06b6d4;
+  --gradient-background-start: #f4f2ef;
+  --gradient-background-end: #f3f5f5;
+  --min-width: 1200px;
+  --min-height: 700px;
 }
 
 * {
@@ -29,6 +31,8 @@ body {
   animation: gradient 15s ease infinite;
   position: relative;
   overflow: hidden;
+  min-width: var(--min-width);
+  min-height: var(--min-height);
 }
 
 body::before {
@@ -127,30 +131,9 @@ h1 {
   }
 }
 
-/* Reset default styles */
-/*html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-}
-
 #app {
-  height: 100%;
   width: 100%;
+  min-width: var(--min-width);
+  min-height: var(--min-height);
+  position: relative;
 }
-
-/* Element Plus dark mode compatibility */
-/*:root {
-  --el-color-primary: #409eff;
-}*/
-
-/* Remove Vite's default styles */
-/*button {
-  border-radius: 0;
-  border: none;
-  margin: 0;
-  padding: 0;
-  width: auto;
-  background: transparent;
-}*/
