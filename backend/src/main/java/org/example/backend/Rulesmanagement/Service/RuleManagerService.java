@@ -1,7 +1,7 @@
-package org.example.backned.Rulesmanagement.Service;
+package org.example.backend.Rulesmanagement.Service;
 
-import org.example.backned.Rulesmanagement.model.Rule;
-import org.example.backned.common.NginxConfig;
+import org.example.backend.Rulesmanagement.model.Rule;
+import org.example.backend.common.NginxConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;

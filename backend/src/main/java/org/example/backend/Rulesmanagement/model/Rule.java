@@ -1,4 +1,4 @@
-package org.example.backned.Rulesmanagement.model;
+package org.example.backend.Rulesmanagement.model;
 
 public class Rule {
     private String type; // IP 或 GeoIP

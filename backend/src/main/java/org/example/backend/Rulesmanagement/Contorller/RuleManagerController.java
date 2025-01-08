@@ -1,7 +1,7 @@
-package org.example.backned.Rulesmanagement.Contorller;
+package org.example.backend.Rulesmanagement.Contorller;
 
-import org.example.backned.Rulesmanagement.model.Rule;
-import org.example.backned.Rulesmanagement.Service.RuleManagerService;
+import org.example.backend.Rulesmanagement.model.Rule;
+import org.example.backend.Rulesmanagement.Service.RuleManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,8 +1,8 @@
-package org.example.backned.IPmanagement.Service;
+package org.example.backend.IPmanagement.Service;
 
-import org.example.backned.common.NginxConfig;
-import org.example.backned.common.SecurityConfig;
-import org.example.backned.IPmanagement.model.IpRule;
+import org.example.backend.common.NginxConfig;
+import org.example.backend.common.SecurityConfig;
+import org.example.backend.IPmanagement.model.IpRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;

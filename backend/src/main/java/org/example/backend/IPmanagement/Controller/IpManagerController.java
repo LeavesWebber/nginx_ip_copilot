@@ -1,7 +1,7 @@
-package org.example.backned.IPmanagement.Controller;
+package org.example.backend.IPmanagement.Controller;
 
-import org.example.backned.IPmanagement.Service.IpManagerService;
-import org.example.backned.IPmanagement.model.IpRule;
+import org.example.backend.IPmanagement.Service.IpManagerService;
+import org.example.backend.IPmanagement.model.IpRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

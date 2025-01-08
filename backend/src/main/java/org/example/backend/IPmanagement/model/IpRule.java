@@ -1,4 +1,4 @@
-package org.example.backned.IPmanagement.model;
+package org.example.backend.IPmanagement.model;
 
 public class IpRule {
     private String id;

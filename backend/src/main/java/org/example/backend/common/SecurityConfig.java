@@ -1,4 +1,4 @@
-package org.example.backned.common;
+package org.example.backend.common;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
