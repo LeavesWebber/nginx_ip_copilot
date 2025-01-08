@@ -29,7 +29,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     new AntPathRequestMatcher("/api/auth/**"),
-                    new AntPathRequestMatcher("/api/nginx/**")
+                    new AntPathRequestMatcher("/api/nginx/**"),
+                    new AntPathRequestMatcher("/api/geo-rules/**")
                 ).permitAll()
                 .anyRequest().authenticated()
             );

@@ -32,6 +32,16 @@ const handleAddRule = async () => {
   }
 }
 
+const handleDeleteRule = async (ruleId: string) => {
+  try {
+    await store.dispatch('geoRules/deleteRule', ruleId)
+    ElMessage.success('删除规则成功')
+    await fetchGeoRules()
+  } catch (error) {
+    ElMessage.error('删除规则失败')
+  }
+}
+
 onMounted(fetchGeoRules)
 </script>
 
@@ -53,7 +63,7 @@ onMounted(fetchGeoRules)
         <el-table-column label="操作">
           <template #default="scope">
             <el-button type="danger" size="small" 
-              @click="store.dispatch('geoRules/deleteRule', scope.row.id)">
+              @click="handleDeleteRule(scope.row.id)">
               删除
             </el-button>
           </template>
