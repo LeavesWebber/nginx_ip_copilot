@@ -7,6 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class UserManagementController {
@@ -19,13 +23,26 @@ public class UserManagementController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
         String userId = loginRequest.getUserId();
         String userPassword = loginRequest.getUserPassword();
 
-        ResponseEntity<AuthResponse> response = userManagementService.validateUser(userId, userPassword);
-
-        return response;
+        ResponseEntity<AuthResponse> serviceResponse = userManagementService.validateUser(userId, userPassword);
+        AuthResponse authResponse = serviceResponse.getBody();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", serviceResponse.getStatusCodeValue());
+        
+        if (authResponse != null && authResponse.getToken() != null) {
+            Map<String, String> data = new HashMap<>();
+            data.put("token", authResponse.getToken());
+            response.put("data", data);
+            response.put("message", authResponse.getMessage());
+        } else {
+            response.put("message", authResponse != null ? authResponse.getMessage() : "登录失败");
+        }
+        
+        return ResponseEntity.status(serviceResponse.getStatusCode()).body(response);
     }
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String authorizationHeader) {

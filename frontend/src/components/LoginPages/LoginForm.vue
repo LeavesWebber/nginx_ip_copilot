@@ -28,21 +28,39 @@
   
   <script setup>
   import { ref, reactive } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useStore } from 'vuex'
   import FormInput from './FormInput.vue'
   import AppButton from './AppButton.vue'
-  import { useLogin } from '../../../useLogin'
+  import { ElMessage } from 'element-plus'
   
+  const router = useRouter()
+  const store = useStore()
   const username = ref('')
   const password = ref('')
-  const errors = reactive({})
-  const { login, isLoading } = useLogin()
+  const isLoading = ref(false)
+  const errors = reactive({
+    username: '',
+    password: ''
+  })
   
   const handleSubmit = async () => {
-    errors.username = !username.value ? 'Username is required' : ''
-    errors.password = !password.value ? 'Password is required' : ''
+    errors.username = !username.value ? '请输入用户名' : ''
+    errors.password = !password.value ? '请输入密码' : ''
     
     if (!errors.username && !errors.password) {
-      await login(username.value, password.value)
+      isLoading.value = true
+      try {
+        await store.dispatch('auth/login', {
+          username: username.value,
+          password: password.value
+        })
+        router.push('/dashboard')
+      } catch (error) {
+        ElMessage.error('登录失败')
+      } finally {
+        isLoading.value = false
+      }
     }
   }
   </script>
