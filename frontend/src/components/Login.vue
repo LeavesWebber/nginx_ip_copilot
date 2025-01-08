@@ -12,26 +12,26 @@ const store = useStore()
 const isLoading = ref(false)
 
 const loginForm = ref({
-  username: '',
-  password: ''
+  userId: '',
+  userPassword: ''
 })
 
 const errors = reactive({
-  username: '',
-  password: ''
+  userId: '',
+  userPassword: ''
 })
 
 const handleLogin = async () => {
-  errors.username = !loginForm.value.username ? 'Username is required' : ''
-  errors.password = !loginForm.value.password ? 'Password is required' : ''
+  errors.userId = !loginForm.value.userId ? '请输入用户名' : ''
+  errors.userPassword = !loginForm.value.userPassword ? '请输入密码' : ''
 
-  if (!errors.username && !errors.password) {
+  if (!errors.userId && !errors.userPassword) {
     isLoading.value = true
     try {
       await store.dispatch('auth/login', loginForm.value)
       router.push('/dashboard')
-    } catch (error) {
-      ElMessage.error('Login failed')
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '登录失败')
     } finally {
       isLoading.value = false
     }
@@ -46,20 +46,20 @@ const handleLogin = async () => {
       <h1>Nginx IP Copilot</h1>
       <form @submit.prevent="handleLogin" class="login-form">
         <FormInput
-          v-model="loginForm.username"
+          v-model="loginForm.userId"
           id="username"
           label="Username"
           type="text"
-          :error="errors.username"
+          :error="errors.userId"
         />
         <FormInput
-          v-model="loginForm.password"
+          v-model="loginForm.userPassword"
           id="password"
           label="Password"
           type="password"
-          :error="errors.password"
+          :error="errors.userPassword"
         />
-        <AppButton 
+        <AppButton
           type="submit"
           :loading="isLoading"
           :disabled="isLoading"
@@ -98,7 +98,7 @@ const handleLogin = async () => {
   background: var(--card-background);
   padding: 2.5rem;
   border-radius: 24px;
-  box-shadow: 
+  box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.1),
     0 0 1px rgba(255, 255, 255, 0.2) inset;
   backdrop-filter: blur(10px);

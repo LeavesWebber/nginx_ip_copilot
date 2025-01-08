@@ -12,8 +12,42 @@
     </button>
   </template>
   
-  <script setup>
-  // ... 保持原有的 script 部分不变
+  <script setup lang="ts">
+  import { ref } from 'vue'
+
+  const props = defineProps({
+    loading: {
+      type: Boolean,
+      default: false
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  })
+
+  const rippleStyle = ref(null)
+
+  const handleClick = (event: MouseEvent) => {
+    if (props.loading || props.disabled) return
+    
+    const button = event.currentTarget as HTMLElement
+    const rect = button.getBoundingClientRect()
+    const size = Math.max(rect.width, rect.height)
+    const x = event.clientX - rect.left - size / 2
+    const y = event.clientY - rect.top - size / 2
+    
+    rippleStyle.value = {
+      top: `${y}px`,
+      left: `${x}px`,
+      width: `${size}px`,
+      height: `${size}px`
+    }
+    
+    setTimeout(() => {
+      rippleStyle.value = null
+    }, 800)
+  }
   </script>
   
   <style scoped>

@@ -10,8 +10,14 @@ const store = useStore()
 const activeMenu = ref(router.currentRoute.value.name)
 
 const handleLogout = async () => {
-  await store.dispatch('auth/logout')
-  router.push({ name: 'login' })
+  try {
+    await store.dispatch('auth/logout')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    // 即使出错也跳转到登录页
+    router.push('/login')
+  }
 }
 </script>
 
@@ -26,11 +32,11 @@ const handleLogout = async () => {
         </div>
 
         <!-- Navigation Menu -->
-        <el-menu 
-          :default-active="activeMenu"
-          router
-          class="nav-menu"
-          :collapse="false">
+        <el-menu
+            :default-active="activeMenu"
+            router
+            class="nav-menu"
+            :collapse="false">
           <el-menu-item index="dashboard" :route="{ name: 'dashboard' }" class="nav-item">
             <el-icon><Monitor /></el-icon>
             <span>Dashboard</span>
@@ -50,22 +56,22 @@ const handleLogout = async () => {
         </el-menu>
       </div>
     </aside>
-    
+
     <!-- Main Content Area -->
     <div class="main-area">
       <!-- Header -->
       <header class="header">
         <div class="header-content">
           <h2 class="header-title">Nginx IP Copilot</h2>
-          <el-button 
-            type="danger" 
-            class="logout-button"
-            @click="handleLogout">
+          <el-button
+              type="danger"
+              class="logout-button"
+              @click="handleLogout">
             Logout
           </el-button>
         </div>
       </header>
-      
+
       <!-- Page Content -->
       <main class="main-content">
         <router-view v-slot="{ Component }">

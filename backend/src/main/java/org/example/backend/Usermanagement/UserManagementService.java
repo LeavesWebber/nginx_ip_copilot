@@ -20,10 +20,12 @@ public class UserManagementService {
                 String jwt = jwtUtil.generateToken(userId);
                 return ResponseEntity.ok(AuthResponse.success(jwt));
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(AuthResponse.error("用户不存在或密码错误，登录失败！"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.error("用户名或密码错误"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(AuthResponse.error("服务器内部错误，请稍后再试。"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(AuthResponse.error("服务器内部错误"));
         }
     }
 }
