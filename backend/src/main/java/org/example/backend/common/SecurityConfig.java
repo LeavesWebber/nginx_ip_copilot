@@ -4,35 +4,27 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.config.Customizer;
 
+@Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated() // 所有请求都需要认证
-                )
-                .formLogin(form -> form
-                        .loginPage("/login") // 自定义登录页面
-                        .permitAll() // 允许所有用户访问登录页面
-                );
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(Customizer.withDefaults())
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(new AntPathRequestMatcher("/api/**")).permitAll()
+                .anyRequest().permitAll()
+            )
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable);
+            
         return http.build();
-    }
-
-
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("user")
-                .password("{noop}password") // {noop} 表示明文密码
-                .roles("USER") // 分配 USER 角色
-                .build();
-        return new InMemoryUserDetailsManager(user);
     }
 }
