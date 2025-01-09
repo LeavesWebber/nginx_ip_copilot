@@ -5,6 +5,12 @@ import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
+import hljs from 'highlight.js/lib/core'
+import nginx from 'highlight.js/lib/languages/nginx'
+import 'highlight.js/styles/idea.css'
+
+// 注册 Nginx 语言支持
+hljs.registerLanguage('nginx', nginx)
 
 interface NginxStatus {
   status: string
@@ -26,32 +32,58 @@ const geoModuleStatus = ref({
 })
 const isInstallingGeoModule = ref(false)
 
-const fetchDashboardData = async () => {
-  isLoading.value = true
+const fetchStatus = async () => {
   try {
-    const status = await store.dispatch('nginx/getStatus')
-    nginxStatus.value = status
-    nginxConfig.value = status.config
-  } catch (error: any) {
-    console.error('Failed to fetch dashboard data:', error)
-    let errorMessage = '获取仪表盘数据失败'
-    if (error.response) {
-      // 服务器响应错误
-      if (error.response.status === 403) {
-        errorMessage = '无权限访问，请先登录'
-      } else if (error.response.data?.message) {
-        errorMessage = error.response.data.message
-      }
-    } else if (error.request) {
-      // 请求发送失败
-      errorMessage = '无法连接到服务器'
-    } else {
-      // 其他错误
-      errorMessage = error.message || '未知错误'
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      nginxStatus.value = null
+      nginxConfig.value = ''
+      return
     }
-    ElMessage.error(errorMessage)
-  } finally {
-    isLoading.value = false
+
+    const data = await store.dispatch('nginx/getStatus')
+    nginxStatus.value = data
+    nginxConfig.value = data.config
+  } catch (error) {
+    console.error('获取 Nginx 状态失败:', error)
+    ElMessage.error('获取 Nginx 状态失败')
+  }
+}
+
+const handleReload = async () => {
+  try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      ElMessage.warning('请先在设置页面配置 Nginx 配置文件路径')
+      return
+    }
+
+    await store.dispatch('nginx/reload')
+    ElMessage.success('Nginx 重新加载成功')
+    fetchStatus()
+  } catch (error) {
+    console.error('重新加载 Nginx 失败:', error)
+    ElMessage.error('重新加载 Nginx 失败')
+  }
+}
+
+const handleSaveConfig = async () => {
+  try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      ElMessage.warning('请先在设置页面配置 Nginx 配置文件路径')
+      return
+    }
+
+    await store.dispatch('nginx/updateConfig', nginxConfig.value)
+    ElMessage.success('配置保存成功')
+    fetchStatus()
+  } catch (error) {
+    console.error('保存配置失败:', error)
+    ElMessage.error('保存配置失败')
   }
 }
 
@@ -63,36 +95,6 @@ const startEditing = () => {
 const cancelEditing = () => {
   isEditing.value = false
   editedConfig.value = ''
-}
-
-const saveConfig = async () => {
-  if (!editedConfig.value.trim()) {
-    ElMessage.warning('配置内容不能为空')
-    return
-  }
-
-  isLoading.value = true
-  try {
-    const response = await store.dispatch('nginx/updateConfig', editedConfig.value)
-    // 配置更新成功
-    if (response.reloadSuccess) {
-      ElMessage.success('配置文件更新成功并已重载Nginx')
-    } else {
-      // 配置更新成功但重载失败
-      ElMessage({
-        message: response.message,
-        type: 'warning'
-      })
-    }
-    isEditing.value = false
-    await fetchDashboardData()
-  } catch (error: any) {
-    console.error('Failed to update config:', error)
-    // 配置更新失败
-    ElMessage.error(error.response?.data?.message || error.message || '更新配置文件失败')
-  } finally {
-    isLoading.value = false
-  }
 }
 
 const checkGeoModuleStatus = async () => {
@@ -121,22 +123,11 @@ const handleInstallGeoModule = async () => {
   }
 }
 
-const reloadNginx = async () => {
-  try {
-    await store.dispatch('nginx/reload')
-    ElMessage.success('Nginx 配置已重载')
-    await fetchDashboardData()
-  } catch (error: any) {
-    console.error('Failed to reload nginx:', error)
-    ElMessage.error(error.response?.data?.message || '重载 Nginx 失败')
-  }
-}
-
 const route = useRoute()
 watch(() => route.path, async (newPath) => {
   if (newPath === '/dashboard') {
     await Promise.all([
-      fetchDashboardData(),
+      fetchStatus(),
       checkGeoModuleStatus()
     ])
   }
@@ -144,16 +135,20 @@ watch(() => route.path, async (newPath) => {
 
 onMounted(async () => {
   await Promise.all([
-    fetchDashboardData(),
+    fetchStatus(),
     checkGeoModuleStatus()
   ])
 })
+
+const highlightConfig = (code: string) => {
+  return hljs.highlight(code, { language: 'nginx' }).value
+}
 </script>
 
 <template>
   <div class="dashboard">
     <el-row :gutter="20">
-      <el-col :span="16">
+      <el-col :span="17">
         <el-card v-loading="isLoading">
           <template #header>
             <div class="card-header">
@@ -172,7 +167,7 @@ onMounted(async () => {
                   <el-button 
                     type="success" 
                     size="small" 
-                    @click="saveConfig"
+                    @click="handleSaveConfig"
                     :loading="isLoading"
                   >
                     保存
@@ -189,7 +184,7 @@ onMounted(async () => {
                 <el-button 
                   type="primary" 
                   size="small" 
-                  @click="fetchDashboardData"
+                  @click="fetchStatus"
                   :loading="isLoading"
                 >
                   刷新
@@ -198,7 +193,7 @@ onMounted(async () => {
             </div>
           </template>
           <div v-if="!isEditing" class="nginx-config">
-            <pre v-if="nginxConfig">{{ nginxConfig }}</pre>
+            <pre v-if="nginxConfig" v-html="highlightConfig(nginxConfig)"></pre>
             <div v-else class="no-config">
               <p>未找到配置文件内容</p>
               <p class="tip">请先在设置页面设置正确的Nginx配置文件路径</p>
@@ -215,7 +210,7 @@ onMounted(async () => {
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="7">
         <el-card class="status-card" v-loading="isLoading">
           <template #header>
             <div class="card-header">
@@ -283,7 +278,7 @@ onMounted(async () => {
               <el-button 
                 type="primary" 
                 size="small" 
-                @click="fetchDashboardData"
+                @click="fetchStatus"
                 :loading="isLoading"
               >
                 刷新
@@ -318,7 +313,7 @@ onMounted(async () => {
                 <el-button 
                   type="primary" 
                   :loading="isLoading"
-                  @click="reloadNginx"
+                  @click="handleReload"
                 >
                   重载配置
                 </el-button>
@@ -441,14 +436,14 @@ onMounted(async () => {
 
 /* 配置显示区域 */
 .nginx-config {
-  background: #f8fafc;
+  background: #fafafa;
   padding: 24px;
   border-radius: 12px;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: Consolas, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
-  color: #334155;
-  border: 1px solid #e2e8f0;
+  color: #2b2b2b;
+  border: 1px solid #e6e6e6;
   margin: 16px;
   min-height: 200px;
 }
@@ -459,13 +454,14 @@ onMounted(async () => {
 }
 
 :deep(.el-textarea__inner) {
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: Consolas, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
   padding: 16px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #fafafa;
+  border: 1px solid #e6e6e6;
+  color: #2b2b2b;
 }
 
 /* 无配置状态提示 */
@@ -573,7 +569,23 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
 }
-
+/* 刷新按钮样式 */
+:deep(.el-button) {
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin-right: 0;  /* 移除右边距 */
+}
 .nginx-status-card {
   margin-bottom: 20px;
 }

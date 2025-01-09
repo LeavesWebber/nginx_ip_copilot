@@ -28,21 +28,41 @@ const checkGeoModuleStatus = async () => {
 
 const fetchGeoRules = async () => {
   try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      geoRules.value = []
+      return
+    }
+
     await store.dispatch('geoRules/fetchRules')
     geoRules.value = store.state.geoRules.rules
   } catch (error) {
-    ElMessage.error('获取地理位置规则失败')
+    console.error('获取规则失败:', error)
+    ElMessage.error('获取规则失败')
   }
 }
 
 const handleAddRule = async () => {
   try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      ElMessage.warning('请先在设置页面配置 Nginx 配置文件路径')
+      return
+    }
+
     await store.dispatch('geoRules/addRule', newRule.value)
     ElMessage.success('添加规则成功')
     dialogVisible.value = false
-    newRule.value = { country_code: '', comment: '' }
+    // 重置表单
+    newRule.value = {
+      country_code: '',
+      comment: ''
+    }
     fetchGeoRules()
   } catch (error) {
+    console.error('添加规则失败:', error)
     ElMessage.error('添加规则失败')
   }
 }
@@ -120,13 +140,14 @@ onMounted(async () => {
 /* 容器样式 */
 .geo-rules {
   padding: 24px;
-  min-width: 1000px;
-  width: 100%;
+  width: 1200px; /* 固定宽度 */
+  margin: 0 auto; /* 居中显示 */
   position: relative;
 }
 
 /* 卡片样式 */
 .el-card {
+  width: 100%;
   border-radius: 16px !important;
   border: none !important;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),

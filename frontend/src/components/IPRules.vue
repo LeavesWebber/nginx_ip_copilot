@@ -15,15 +15,30 @@ const newRule = ref({
 
 const fetchRules = async () => {
   try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      rules.value = []
+      return
+    }
+
     await store.dispatch('ipRules/fetchRules')
     rules.value = store.state.ipRules.rules
   } catch (error) {
+    console.error('获取规则失败:', error)
     ElMessage.error('获取规则失败')
   }
 }
 
 const handleAddRule = async () => {
   try {
+    // 检查是否设置了 Nginx 配置文件路径
+    const nginxConfigPath = localStorage.getItem('nginxConfigPath')
+    if (!nginxConfigPath) {
+      ElMessage.warning('请先在设置页面配置 Nginx 配置文件路径')
+      return
+    }
+
     const ruleData = {
       ...newRule.value,
       // 根据类型选择使用 ip 或 ip_range
@@ -50,6 +65,7 @@ const handleAddRule = async () => {
     }
     fetchRules()
   } catch (error) {
+    console.error('添加规则失败:', error)
     ElMessage.error('添加规则失败')
   }
 }
@@ -114,7 +130,10 @@ onMounted(fetchRules)
 
 <style scoped>
 .ip-rules {
-  padding: 20px;
+  padding: 24px;
+  width: 1200px; /* 固定宽度 */
+  margin: 0 auto; /* 居中显示 */
+  position: relative;
 }
 
 .header {

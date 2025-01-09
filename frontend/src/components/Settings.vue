@@ -76,8 +76,20 @@ const saveSettings = async () => {
 
 onMounted(async () => {
   try {
-    const data = await store.dispatch('settings/fetchSettings')
-    settings.value = data
+    // 先从 localStorage 获取配置
+    const localPath = localStorage.getItem('nginxConfigPath')
+    if (localPath) {
+      // 只有当本地有配置时才从后端获取
+      const data = await store.dispatch('settings/fetchSettings')
+      settings.value = data
+    } else {
+      // 如果本地没有配置，使用默认值
+      settings.value = {
+        nginxConfigPath: '',
+        enableAbuseIPDB: false,
+        abuseIPDBApiKey: ''
+      }
+    }
     isPathModified.value = false
   } catch (error: any) {
     console.error('Load settings error:', error)
@@ -89,7 +101,7 @@ onMounted(async () => {
 <template>
   <div class="settings">
     <el-card>
-      <template #header>系统设置</template>
+      <template #header><span>系统设置</span></template>
       
       <el-form :model="settings" label-width="200px">
         <el-form-item label="Nginx 配置文件路径">
@@ -143,10 +155,18 @@ onMounted(async () => {
   border: none !important;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),
               0 4px 12px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  min-width: 1000px;
-  width: 100%;
+}
+.el-card.template #header {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(120deg, #2563eb, #3b82f6, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+  position: relative;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  padding-left: 0;  /* 移除额外的左内边距 */
+  margin-left: 0;   /* 移除左边距 */
 }
 
 :deep(.el-card__header) {
@@ -167,6 +187,23 @@ onMounted(async () => {
   letter-spacing: 0.5px;
   position: relative;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+/* 刷新按钮样式 */
+:deep(.el-button) {
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin-right: 0;  /* 移除右边距 */
 }
 
 :deep(.el-form) {
