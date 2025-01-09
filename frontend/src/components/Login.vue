@@ -77,6 +77,7 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(-45deg, #fff5f5, #fff1f1);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
   position: relative;
@@ -95,15 +96,15 @@ const handleLogin = async () => {
 .login-card {
   width: 100%;
   max-width: 400px;
-  background: var(--card-background);
+  background: rgba(255, 255, 255, 0.95);
   padding: 2.5rem;
   border-radius: 24px;
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.1),
+  box-shadow: 
+    0 10px 25px rgba(173, 25, 49, 0.1),
     0 0 1px rgba(255, 255, 255, 0.2) inset;
   backdrop-filter: blur(10px);
   animation: slideUp 0.5s ease-out;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(173, 25, 49, 0.1);
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -116,7 +117,7 @@ const handleLogin = async () => {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(173, 25, 49, 0.03) 0%, rgba(255,255,255,0) 70%);
   transform: rotate(0deg);
   animation: rotate 20s linear infinite;
 }
@@ -131,11 +132,42 @@ h1 {
   text-align: center;
   font-size: 1.75rem;
   margin-bottom: 2rem;
-  color: var(--text-color);
+  color: #ad1931 !important;
   font-weight: 700;
-  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+:deep(.input-group input) {
+  border: 2px solid rgba(173, 25, 49, 0.2);
+}
+
+:deep(.input-group input:focus) {
+  border-color: #ad1931;
+  box-shadow: 0 0 0 4px rgba(173, 25, 49, 0.1);
+}
+
+:deep(.input-group label) {
+  color: #666;
+}
+
+:deep(.input-group input:focus ~ label) {
+  color: #ad1931;
+}
+
+:deep(.app-button) {
+  background: linear-gradient(45deg, #ad1931, #c41e3a);
+  box-shadow: 0 4px 12px rgba(173, 25, 49, 0.3);
+}
+
+:deep(.app-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(173, 25, 49, 0.4);
+}
+
+:deep(.error-message) {
+  color: #ad1931;
 }
 
 @keyframes gradient {
