@@ -499,47 +499,42 @@ public class NginxConfigService {
         // 统一使用正斜杠
         String includePathStr = relativePath.toString().replace('\\', '/');
         logger.info("最终使用的include路径: {}", includePathStr);
-        
+
         // 读取现有配置
         List<String> lines = Files.readAllLines(nginxConfigPath);
         boolean includeExists = false;
+        boolean geoipConfigExists = false;
         int serverBlockStart = -1;
         int serverBlockEnd = -1;
-        int currentBraceCount = 0;
-        
-        // 第一遍扫描：检查include语句和定位server块
+
+        // 遍历配置文件
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).trim();
-            logger.debug("检查第{}行: {}", i + 1, line);
             
-            // 检查include语句（使用相对路径检查）
-            if (line.contains("include") && line.contains(includePathStr)) {
+            // 检查是否已包含规则文件
+            if (line.startsWith("include") && line.contains(includePathStr)) {
                 includeExists = true;
-                logger.info("找到现有的include语句，位于第{}行", i + 1);
-                break;
+                logger.info("找到已存在的include语句，在第{}行", i + 1);
             }
             
-            // 定位server块
+            // 检查是否已存在GeoIP2配置
+            if (line.startsWith("geoip2") && line.contains("GeoLite2-Country.mmdb")) {
+                geoipConfigExists = true;
+                logger.info("找到已存在的GeoIP2配置，在第{}行", i + 1);
+            }
+
+            // 记录server块的位置
             if (line.startsWith("server {")) {
                 serverBlockStart = i;
-                logger.info("找到server块起始位置，在第{}行", i + 1);
-            }
-            
-            // 计算花括号以找到server块的结束位置
-            if (line.contains("{")) {
-                currentBraceCount++;
-            }
-            if (line.contains("}")) {
-                currentBraceCount--;
-                if (currentBraceCount == 0 && serverBlockStart != -1) {
-                    serverBlockEnd = i;
-                    logger.info("找到server块结束位置，在第{}行", i + 1);
-                    break;
-                }
+                logger.info("找到server块开始位置，在第{}行", i + 1);
+            } else if (serverBlockStart != -1 && line.equals("}")) {
+                serverBlockEnd = i;
+                logger.info("找到server块结束位置，在第{}行", i + 1);
+                break;
             }
         }
-        
-        // 如果没有include语句且找到了server块，添加include语句
+
+        // 如果没有include语句且找到了server块，添加必要的配置
         if (!includeExists && serverBlockStart != -1) {
             logger.info("未找到include语句，准备添加到server块中");
             
@@ -554,14 +549,17 @@ public class NginxConfigService {
             // 添加到server块开始之后
             newLines.addAll(lines.subList(0, serverBlockStart + 1));
             
-            // 添加GeoIP2配置
-            newLines.add("");
-            newLines.add(indent + "    # GeoIP2 Configuration");
-            newLines.add(indent + "    geoip2 /usr/share/GeoIP/GeoLite2-Country.mmdb {");
-            newLines.add(indent + "        auto_reload 5m;");
-            newLines.add(indent + "        $geoip2_country_code country iso_code;");
-            newLines.add(indent + "    }");
-            newLines.add("");
+            // 只有在GeoIP2配置不存在时才添加
+            if (!geoipConfigExists) {
+                newLines.add("");
+                newLines.add(indent + "    # GeoIP2 Configuration");
+                newLines.add(indent + "    geoip2 /usr/share/GeoIP/GeoLite2-Country.mmdb {");
+                newLines.add(indent + "        auto_reload 5m;");
+                newLines.add(indent + "        $geoip2_country_code country iso_code;");
+                newLines.add(indent + "    }");
+                newLines.add("");
+            }
+            
             newLines.add(indent + "    # Include GeoIP blocking rules");
             newLines.add(indent + "    include " + includePathStr + ";");
             newLines.add("");
