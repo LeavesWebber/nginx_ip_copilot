@@ -93,4 +93,16 @@ public class NginxConfigController {
         nginxConfigService.updateSettings(settings);
         return ResponseEntity.ok(settings);
     }
+
+    @GetMapping("/geo-module/status")
+    public ResponseEntity<?> checkGeoModuleStatus() {
+        Map<String, Object> status = nginxConfigService.checkGeoModuleStatus();
+        return ResponseEntity.ok(status);
+    }
+
+    @PostMapping("/geo-module/install")
+    public ResponseEntity<?> installGeoModule() {
+        Map<String, Object> result = nginxConfigService.installGeoModule();
+        return ResponseEntity.ok(result);
+    }
 } 

@@ -2,10 +2,7 @@ package org.example.backend.common;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.File;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +12,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 
 @Service
 public class NginxConfigService {
@@ -186,11 +185,92 @@ public class NginxConfigService {
 
     public Map<String, Object> getNginxStatus() {
         Map<String, Object> status = new HashMap<>();
-        status.put("status", "running");  // 这里可以添加实际的nginx状态检查
-        status.put("worker_processes", 4); // 这里可以添加实际的worker进程数获取
-        status.put("connections", 100);    // 这里可以添加实际的连接数获取
-        status.put("config", readConfig());
+        
+        try {
+            String osName = System.getProperty("os.name").toLowerCase();
+            boolean isWindows = osName.contains("win");
+            String command;
+            
+            if (isWindows) {
+                // Windows 环境
+                String nginxPath = System.getenv("NGINX_HOME");
+                if (nginxPath == null || nginxPath.trim().isEmpty()) {
+                    logger.warn("NGINX_HOME environment variable is not set");
+                    status.put("status", "stopped");
+                    status.put("worker_processes", 0);
+                    status.put("connections", 0);
+                    status.put("config", readConfig());
+                    return status;
+                }
+                command = "tasklist /FI \"IMAGENAME eq nginx.exe\" /FO CSV /NH";
+            } else {
+                // Linux/Unix 环境
+                command = "ps aux | grep nginx | grep -v grep";
+            }
+            
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            boolean isRunning = false;
+            int workerCount = 0;
+            
+            while ((line = reader.readLine()) != null) {
+                if (isWindows) {
+                    if (line.toLowerCase().contains("nginx.exe")) {
+                        isRunning = true;
+                        workerCount++;
+                    }
+                } else {
+                    if (line.contains("nginx: worker process")) {
+                        workerCount++;
+                    } else if (line.contains("nginx: master process")) {
+                        isRunning = true;
+                    }
+                }
+            }
+            
+            process.waitFor(5, TimeUnit.SECONDS);
+            
+            status.put("status", isRunning ? "running" : "stopped");
+            status.put("worker_processes", workerCount);
+            status.put("connections", isRunning ? getActiveConnections() : 0);
+            status.put("config", readConfig());
+            
+        } catch (Exception e) {
+            logger.error("Error checking nginx status: " + e.getMessage());
+            status.put("status", "stopped");
+            status.put("worker_processes", 0);
+            status.put("connections", 0);
+            try {
+                status.put("config", readConfig());
+            } catch (Exception ex) {
+                status.put("config", "");
+            }
+        }
+        
         return status;
+    }
+    
+    private int getActiveConnections() {
+        try {
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (osName.contains("win")) {
+                // Windows 环境下使用 netstat 命令
+                Process process = Runtime.getRuntime().exec("netstat -an | findstr :80");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                int connections = 0;
+                while (reader.readLine() != null) {
+                    connections++;
+                }
+                return connections;
+            } else {
+                // Linux/Unix 环境可以通过读取 nginx status 页面获取
+                return 0; // 这里可以实现通过访问 nginx status 页面获取连接数
+            }
+        } catch (Exception e) {
+            logger.error("Error getting active connections: " + e.getMessage());
+            return 0;
+        }
     }
 
     public boolean reloadNginx() {
@@ -263,6 +343,271 @@ public class NginxConfigService {
             
             nginxConfig.setNginxConfigPath(newPath);
             logger.info("Successfully updated nginx config path");
+        }
+    }
+
+    public Map<String, Object> checkGeoModuleStatus() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("isInstalled", false);
+        result.put("isEnabled", false);
+        result.put("message", "");
+
+        try {
+            String configPath = nginxConfig.getNginxConfigPath();
+            if (configPath == null || configPath.isEmpty()) {
+                result.put("message", "未设置Nginx配置文件路径");
+                return result;
+            }
+
+            // 检查配置文件是否存在
+            Path path = Paths.get(configPath);
+            if (!Files.exists(path)) {
+                result.put("message", "Nginx配置文件不存在");
+                return result;
+            }
+
+            // 检查是否有load_module语句
+            List<String> lines = Files.readAllLines(path);
+            boolean hasLoadModule = false;
+            boolean isEnabled = false;
+
+            for (String line : lines) {
+                String trimmedLine = line.trim();
+                // 检查是否有加载模块的语句
+                if (trimmedLine.startsWith("load_module") && trimmedLine.contains("ngx_http_geoip2_module")) {
+                    hasLoadModule = true;
+                }
+                // 检查是否有geoip2配置块
+                if (trimmedLine.startsWith("geoip2") && trimmedLine.contains(".mmdb")) {
+                    isEnabled = true;
+                }
+            }
+
+            result.put("isInstalled", hasLoadModule);
+            result.put("isEnabled", isEnabled);
+            
+            if (!hasLoadModule) {
+                result.put("message", "GeoIP2模块未安装");
+            } else if (!isEnabled) {
+                result.put("message", "GeoIP2模块已安装但未启用");
+            } else {
+                result.put("message", "GeoIP2模块已安装并启用");
+            }
+            
+        } catch (Exception e) {
+            logger.error("检查GeoIP2模块状态失败", e);
+            result.put("message", "检查GeoIP2模块状态失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    private boolean checkGeoModuleEnabled() {
+        String configPath = nginxConfig.getNginxConfigPath();
+        if (configPath == null || configPath.isEmpty()) {
+            return false;
+        }
+
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(configPath));
+            for (String line : lines) {
+                if (line.contains("load_module") && line.contains("ngx_http_geoip2_module")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            logger.error("检查GeoIP2模块配置失败", e);
+        }
+        return false;
+    }
+
+    public Map<String, Object> installGeoModule() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", "");
+
+        try {
+            // 这里需要实现具体的安装逻辑
+            // 1. 下载并编译GeoIP2模块
+            // 2. 修改nginx配置文件
+            // 3. 重启nginx服务
+            
+            // 示例实现（实际需要根据不同操作系统和环境调整）
+            ProcessBuilder pb = new ProcessBuilder(
+                "bash",
+                "-c",
+                "cd /tmp && " +
+                "git clone https://github.com/leev/ngx_http_geoip2_module.git && " +
+                "cd ngx_http_geoip2_module && " +
+                "nginx -V 2>&1 | grep 'configure arguments:' | sed 's/configure arguments: //g' | " +
+                "xargs -I{} nginx -V --add-dynamic-module=/tmp/ngx_http_geoip2_module {}"
+            );
+            
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+            
+            if (process.waitFor() == 0) {
+                // 安装成功，修改nginx配置
+                updateNginxConfig();
+                result.put("success", true);
+                result.put("message", "GeoIP2模块安装成功");
+            } else {
+                result.put("message", "GeoIP2模块安装失败: " + output.toString());
+            }
+            
+        } catch (Exception e) {
+            logger.error("安装GeoIP2模块失败", e);
+            result.put("message", "安装GeoIP2模块失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    public void ensureConfigIncluded(String geoRulesPath) throws IOException {
+        String configPath = nginxConfig.getNginxConfigPath();
+        if (configPath == null || configPath.isEmpty()) {
+            throw new RuntimeException("Nginx配置文件路径未设置");
+        }
+
+        logger.info("开始处理配置文件包含关系");
+        logger.info("Nginx配置文件路径: {}", configPath);
+        logger.info("地理规则文件路径: {}", geoRulesPath);
+
+        // 获取路径
+        Path nginxConfigPath = Paths.get(configPath).toAbsolutePath().normalize();
+        Path geoRulesConfigPath = Paths.get(geoRulesPath).toAbsolutePath().normalize();
+        
+        // 计算相对路径
+        Path relativePath;
+        try {
+            relativePath = nginxConfigPath.getParent().relativize(geoRulesConfigPath);
+            logger.info("计算得到的相对路径: {}", relativePath);
+        } catch (Exception e) {
+            logger.error("计算相对路径失败，将使用绝对路径", e);
+            relativePath = geoRulesConfigPath;
+        }
+        
+        // 统一使用正斜杠
+        String includePathStr = relativePath.toString().replace('\\', '/');
+        logger.info("最终使用的include路径: {}", includePathStr);
+        
+        // 读取现有配置
+        List<String> lines = Files.readAllLines(nginxConfigPath);
+        boolean includeExists = false;
+        int serverBlockStart = -1;
+        int serverBlockEnd = -1;
+        int currentBraceCount = 0;
+        
+        // 第一遍扫描：检查include语句和定位server块
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            logger.debug("检查第{}行: {}", i + 1, line);
+            
+            // 检查include语句（使用相对路径检查）
+            if (line.contains("include") && line.contains(includePathStr)) {
+                includeExists = true;
+                logger.info("找到现有的include语句，位于第{}行", i + 1);
+                break;
+            }
+            
+            // 定位server块
+            if (line.startsWith("server {")) {
+                serverBlockStart = i;
+                logger.info("找到server块起始位置，在第{}行", i + 1);
+            }
+            
+            // 计算花括号以找到server块的结束位置
+            if (line.contains("{")) {
+                currentBraceCount++;
+            }
+            if (line.contains("}")) {
+                currentBraceCount--;
+                if (currentBraceCount == 0 && serverBlockStart != -1) {
+                    serverBlockEnd = i;
+                    logger.info("找到server块结束位置，在第{}行", i + 1);
+                    break;
+                }
+            }
+        }
+        
+        // 如果没有include语句且找到了server块，添加include语句
+        if (!includeExists && serverBlockStart != -1) {
+            logger.info("未找到include语句，准备添加到server块中");
+            
+            // 获取server块的缩进
+            String serverLine = lines.get(serverBlockStart);
+            String indent = serverLine.substring(0, serverLine.indexOf("server"));
+            logger.info("使用的缩进: '{}'", indent);
+            
+            // 在server块内部添加include语句（位置在server块开始的下一行）
+            List<String> newLines = new ArrayList<>();
+            
+            // 添加到server块开始之后
+            newLines.addAll(lines.subList(0, serverBlockStart + 1));
+            
+            // 添加GeoIP2配置
+            newLines.add("");
+            newLines.add(indent + "    # GeoIP2 Configuration");
+            newLines.add(indent + "    geoip2 /usr/share/GeoIP/GeoLite2-Country.mmdb {");
+            newLines.add(indent + "        auto_reload 5m;");
+            newLines.add(indent + "        $geoip2_country_code country iso_code;");
+            newLines.add(indent + "    }");
+            newLines.add("");
+            newLines.add(indent + "    # Include GeoIP blocking rules");
+            newLines.add(indent + "    include " + includePathStr + ";");
+            newLines.add("");
+            
+            // 添加剩余的配置
+            newLines.addAll(lines.subList(serverBlockStart + 1, lines.size()));
+            
+            // 写回配置文件
+            Files.write(nginxConfigPath, newLines);
+            logger.info("成功更新Nginx配置文件，添加了include语句");
+        } else if (!includeExists) {
+            logger.error("未找到server块，无法添加include语句");
+            throw new RuntimeException("Nginx配置文件中未找到server块，无法添加include语句");
+        } else {
+            logger.info("include语句已存在，无需修改");
+        }
+    }
+
+    private void updateNginxConfig() throws IOException {
+        String configPath = nginxConfig.getNginxConfigPath();
+        if (configPath == null || configPath.isEmpty()) {
+            throw new RuntimeException("Nginx配置文件路径未设置");
+        }
+
+        // 读取现有配置
+        Path path = Paths.get(configPath);
+        List<String> lines = Files.readAllLines(path);
+        boolean moduleLoaded = false;
+        
+        // 检查模块加载
+        for (String line : lines) {
+            if (line.contains("load_module") && line.contains("ngx_http_geoip2_module")) {
+                moduleLoaded = true;
+                break;
+            }
+        }
+        
+        // 如果模块未加载，添加加载语句
+        if (!moduleLoaded) {
+            List<String> newLines = new ArrayList<>();
+            newLines.add("load_module modules/ngx_http_geoip2_module.so;");
+            newLines.add("");
+            newLines.addAll(lines);
+            
+            // 写回配置文件
+            Files.write(path, newLines);
+            logger.info("成功更新Nginx配置文件，添加了模块加载语句");
         }
     }
 } 

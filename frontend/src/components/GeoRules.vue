@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
 
 const store = useStore()
 const geoRules = ref([])
@@ -10,6 +11,20 @@ const newRule = ref({
   country_code: '',
   comment: ''
 })
+const geoModuleStatus = ref({
+  isInstalled: false,
+  isEnabled: false,
+  message: ''
+})
+
+const checkGeoModuleStatus = async () => {
+  try {
+    const response = await axios.get('/api/nginx/geo-module/status')
+    geoModuleStatus.value = response.data
+  } catch (error) {
+    ElMessage.error('检查GeoIP2模块状态失败')
+  }
+}
 
 const fetchGeoRules = async () => {
   try {
@@ -42,7 +57,10 @@ const handleDeleteRule = async (ruleId: string) => {
   }
 }
 
-onMounted(fetchGeoRules)
+onMounted(async () => {
+  await checkGeoModuleStatus()
+  await fetchGeoRules()
+})
 </script>
 
 <template>
@@ -54,6 +72,16 @@ onMounted(fetchGeoRules)
           <el-button type="primary" @click="dialogVisible = true">添加规则</el-button>
         </div>
       </template>
+      
+      <el-alert
+        v-if="!geoModuleStatus.isEnabled"
+        title="GeoIP2模块未启用"
+        type="warning"
+        description="当前GeoIP2模块未正确安装或启用，添加的规则可能不会生效。请在仪表盘中检查模块状态。"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 20px;"
+      />
       
       <el-table :data="geoRules">
         <el-table-column prop="country_code" label="国家代码" />

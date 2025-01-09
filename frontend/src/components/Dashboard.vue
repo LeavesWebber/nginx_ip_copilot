@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
+import { useRoute } from 'vue-router'
+import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 
 interface NginxStatus {
   status: string
@@ -16,6 +19,12 @@ const nginxConfig = ref('')
 const isEditing = ref(false)
 const editedConfig = ref('')
 const isLoading = ref(false)
+const geoModuleStatus = ref({
+  isInstalled: false,
+  isEnabled: false,
+  message: ''
+})
+const isInstallingGeoModule = ref(false)
 
 const fetchDashboardData = async () => {
   isLoading.value = true
@@ -86,7 +95,59 @@ const saveConfig = async () => {
   }
 }
 
-onMounted(fetchDashboardData)
+const checkGeoModuleStatus = async () => {
+  try {
+    const response = await axios.get('/api/nginx/geo-module/status')
+    geoModuleStatus.value = response.data
+  } catch (error) {
+    ElMessage.error('检查GeoIP2模块状态失败')
+  }
+}
+
+const handleInstallGeoModule = async () => {
+  try {
+    isInstallingGeoModule.value = true
+    const response = await axios.post('/api/nginx/geo-module/install')
+    if (response.data.success) {
+      ElMessage.success('GeoIP2模块安装成功')
+      await checkGeoModuleStatus()
+    } else {
+      ElMessage.error(response.data.message || 'GeoIP2模块安装失败')
+    }
+  } catch (error) {
+    ElMessage.error('安装GeoIP2模块失败')
+  } finally {
+    isInstallingGeoModule.value = false
+  }
+}
+
+const reloadNginx = async () => {
+  try {
+    await store.dispatch('nginx/reload')
+    ElMessage.success('Nginx 配置已重载')
+    await fetchDashboardData()
+  } catch (error: any) {
+    console.error('Failed to reload nginx:', error)
+    ElMessage.error(error.response?.data?.message || '重载 Nginx 失败')
+  }
+}
+
+const route = useRoute()
+watch(() => route.path, async (newPath) => {
+  if (newPath === '/dashboard') {
+    await Promise.all([
+      fetchDashboardData(),
+      checkGeoModuleStatus()
+    ])
+  }
+})
+
+onMounted(async () => {
+  await Promise.all([
+    fetchDashboardData(),
+    checkGeoModuleStatus()
+  ])
+})
 </script>
 
 <template>
@@ -155,15 +216,117 @@ onMounted(fetchDashboardData)
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card v-loading="isLoading">
-          <template #header>系统状态</template>
-          <div v-if="nginxStatus">
-            <p><strong>状态：</strong> {{ nginxStatus.status }}</p>
-            <p><strong>工作进程：</strong> {{ nginxStatus.worker_processes }}</p>
-            <p><strong>活动连接：</strong> {{ nginxStatus.connections }}</p>
+        <el-card class="status-card" v-loading="isLoading">
+          <template #header>
+            <div class="card-header">
+              <span>系统状态</span>
+            </div>
+          </template>
+          <div class="status-content">
+            <div v-if="nginxStatus">
+              <div class="status-item">
+                <span>运行状态:</span>
+                <el-tag :type="nginxStatus.status === 'running' ? 'success' : 'danger'">
+                  {{ nginxStatus.status === 'running' ? '运行中' : '已停止' }}
+                </el-tag>
+              </div>
+              <div class="status-item">
+                <span>工作进程:</span>
+                <span>{{ nginxStatus.worker_processes }}</span>
+              </div>
+              <div class="status-item">
+                <span>活动连接:</span>
+                <span>{{ nginxStatus.connections }}</span>
+              </div>
+            </div>
+            <div v-else class="no-status">
+              <p>未能获取系统状态</p>
+            </div>
           </div>
-          <div v-else class="no-status">
-            <p>未能获取系统状态</p>
+        </el-card>
+        <el-card class="status-card">
+          <template #header>
+            <div class="card-header">
+              <span>GeoIP2 模块状态</span>
+            </div>
+          </template>
+          <div class="status-content">
+            <div class="status-item">
+              <span>安装状态:</span>
+              <el-tag :type="geoModuleStatus.isInstalled ? 'success' : 'warning'">
+                {{ geoModuleStatus.isInstalled ? '已安装' : '未安装' }}
+              </el-tag>
+            </div>
+            <div class="status-item">
+              <span>启用状态:</span>
+              <el-tag :type="geoModuleStatus.isEnabled ? 'success' : 'warning'">
+                {{ geoModuleStatus.isEnabled ? '已启用' : '未启用' }}
+              </el-tag>
+            </div>
+            <div class="status-message" v-if="geoModuleStatus.message">
+              {{ geoModuleStatus.message }}
+            </div>
+            <div class="button-container" v-if="!geoModuleStatus.isInstalled">
+              <el-button 
+                type="primary" 
+                @click="handleInstallGeoModule"
+                :loading="isInstallingGeoModule">
+                安装 GeoIP2 模块
+              </el-button>
+            </div>
+          </div>
+        </el-card>
+        <el-card class="nginx-status-card" v-loading="isLoading">
+          <template #header>
+            <div class="card-header">
+              <span>Nginx 运行状态</span>
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="fetchDashboardData"
+                :loading="isLoading"
+              >
+                刷新
+              </el-button>
+            </div>
+          </template>
+          <div class="status-content">
+            <div v-if="nginxStatus" class="nginx-status">
+              <div class="status-item">
+                <el-tag 
+                  class="status-tag"
+                  size="large"
+                  :type="nginxStatus.status === 'running' ? 'success' : 'danger'"
+                >
+                  <el-icon class="status-icon">
+                    <component :is="nginxStatus.status === 'running' ? 'CircleCheckFilled' : 'CircleCloseFilled'" />
+                  </el-icon>
+                  {{ nginxStatus.status === 'running' ? 'Nginx 正在运行' : 'Nginx 已停止' }}
+                </el-tag>
+              </div>
+              <div class="status-details">
+                <div class="detail-item">
+                  <span class="label">工作进程数：</span>
+                  <span class="value">{{ nginxStatus.worker_processes }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">当前连接数：</span>
+                  <span class="value">{{ nginxStatus.connections }}</span>
+                </div>
+              </div>
+              <div class="status-actions">
+                <el-button 
+                  type="primary" 
+                  :loading="isLoading"
+                  @click="reloadNginx"
+                >
+                  重载配置
+                </el-button>
+              </div>
+            </div>
+            <div v-else class="no-status">
+              <el-empty description="无法获取 Nginx 状态" />
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -358,5 +521,108 @@ onMounted(fetchDashboardData)
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.dashboard {
+  padding: 20px;
+}
+
+.status-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-content {
+  padding: 16px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-message {
+  margin-top: 16px;
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  color: #666;
+  font-size: 14px;
+}
+
+.no-status {
+  text-align: center;
+  color: #909399;
+  padding: 20px 0;
+}
+
+.button-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.nginx-status-card {
+  margin-bottom: 20px;
+}
+
+.nginx-status {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status-tag {
+  width: 100%;
+  justify-content: center;
+  font-size: 16px;
+  padding: 12px;
+}
+
+.status-icon {
+  margin-right: 8px;
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-item .label {
+  color: #606266;
+}
+
+.detail-item .value {
+  font-weight: bold;
+}
+
+.status-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 
@@ -10,14 +10,18 @@ const settings = ref({
   abuseIPDBApiKey: ''
 })
 
+const isLoading = ref(false)
 const isPathModified = ref(false)
-const isSaveDisabled = ref(true)
+
+// 使用computed属性来控制按钮状态
+const isSaveDisabled = computed(() => {
+  return !settings.value.nginxConfigPath || settings.value.nginxConfigPath.trim() === ''
+})
 
 // 监听配置路径的变化
 watch(() => settings.value.nginxConfigPath, (newValue, oldValue) => {
   if (oldValue !== '') {  // 只在初始加载后才标记修改
     isPathModified.value = true
-    isSaveDisabled.value = false
   }
 })
 
@@ -57,14 +61,16 @@ const saveSettings = async () => {
       return
     }
 
+    isLoading.value = true
     // 保存设置
-    const response = await store.dispatch('settings/saveSettings', settings.value)
+    await store.dispatch('settings/saveSettings', settings.value)
     ElMessage.success('配置文件路径设置成功！')
     isPathModified.value = false
-    isSaveDisabled.value = true
   } catch (error: any) {
     console.error('Save settings error:', error)
     ElMessage.error(error.message || '保存设置失败，请检查文件路径是否正确')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -73,7 +79,6 @@ onMounted(async () => {
     const data = await store.dispatch('settings/fetchSettings')
     settings.value = data
     isPathModified.value = false
-    isSaveDisabled.value = true
   } catch (error: any) {
     console.error('Load settings error:', error)
     ElMessage.error('加载设置失败')
@@ -88,7 +93,7 @@ onMounted(async () => {
       
       <el-form :model="settings" label-width="200px">
         <el-form-item label="Nginx 配置文件路径">
-          <el-input 
+          <el-input
             v-model="settings.nginxConfigPath" 
             placeholder="Windows示例：D:\nginx\conf\nginx.conf，Linux示例：/etc/nginx/nginx.conf"
           />
@@ -113,11 +118,11 @@ onMounted(async () => {
         </el-form-item>
         
         <el-form-item>
-          <el-button 
-            type="primary" 
-            @click="saveSettings" 
+          <el-button
+            type="primary"
+            @click="saveSettings"
+            :loading="isLoading"
             :disabled="isSaveDisabled"
-            :class="{ 'is-disabled': isSaveDisabled }"
           >保存设置</el-button>
         </el-form-item>
       </el-form>
@@ -177,6 +182,21 @@ onMounted(async () => {
 :deep(.el-form-item) {
   margin-bottom: 24px;
   min-width: 100%;
+}
+
+.form-item-tip {
+  margin-top: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.form-item-tip ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.form-item-tip li {
+  margin: 4px 0;
 }
 
 .is-disabled {
