@@ -78,9 +78,13 @@ const handleSaveConfig = async () => {
       return
     }
 
-    await store.dispatch('nginx/updateConfig', nginxConfig.value)
+    await store.dispatch('nginx/updateConfig', editedConfig.value)
     ElMessage.success('配置保存成功')
-    fetchStatus()
+    isEditing.value = false
+    // 等待文件写入完成后再刷新状态
+    setTimeout(async () => {
+      await fetchStatus()
+    }, 1000)
   } catch (error) {
     console.error('保存配置失败:', error)
     ElMessage.error('保存配置失败')

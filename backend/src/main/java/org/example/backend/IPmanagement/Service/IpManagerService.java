@@ -1,11 +1,15 @@
 package org.example.backend.IPmanagement.Service;
 
 import org.example.backend.common.NginxConfig;
-import org.example.backend.common.SecurityConfig;
 import org.example.backend.IPmanagement.model.IpRule;
+import org.example.backend.IPmanagement.repository.IpRuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.*;
@@ -15,153 +19,139 @@ import java.util.stream.Collectors;
 
 @Service
 public class IpManagerService {
+    private static final Logger logger = LoggerFactory.getLogger(IpManagerService.class);
 
     @Autowired
     private NginxConfig nginxConfig;
-    
-    private final String BLOCK_IPS_FILE = "block_ips.conf";
-    private List<IpRule> ipRules = new ArrayList<>();
 
-    @PreAuthorize("hasRole('USER')")
-    public List<IpRule> getAllIpRules() {
-        loadRulesFromFile();
-        return new ArrayList<>(ipRules);
+    @Autowired
+    private IpRuleRepository ipRuleRepository;
+
+    @Autowired
+    private org.example.backend.common.NginxConfigService nginxConfigService;
+
+    @Value("${nginx.block-ips-file:block_ips.conf}")
+    private String blockIpsFileName;
+
+    @Value("${nginx.reload.enabled:false}")
+    private boolean nginxReloadEnabled;
+
+    private Path getBlockIpsFilePath() {
+        String nginxConfigPath = nginxConfig.getNginxConfigPath();
+        if (nginxConfigPath == null || nginxConfigPath.isEmpty()) {
+            throw new IllegalStateException("Nginx配置文件路径未设置");
+        }
+
+        // 获取nginx配置文件的父目录
+        File nginxConfigFile = new File(nginxConfigPath);
+        if (!nginxConfigFile.exists()) {
+            throw new RuntimeException("Nginx配置文件不存在: " + nginxConfigPath);
+        }
+
+        File parentDir = nginxConfigFile.getParentFile();
+        if (parentDir == null) {
+            throw new RuntimeException("无法获取配置文件的父目录: " + nginxConfigPath);
+        }
+        
+        if (!parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new RuntimeException("无法创建配置文件目录: " + parentDir.getAbsolutePath());
+            }
+        }
+        
+        if (!parentDir.canWrite()) {
+            throw new RuntimeException("配置文件目录无写入权限: " + parentDir.getAbsolutePath());
+        }
+        
+        Path path = Paths.get(parentDir.getAbsolutePath(), "block_ips.conf");
+        logger.info("生成的IP规则配置文件路径: {}", path.toString());
+        return path;
     }
 
     @PreAuthorize("hasRole('USER')")
+    @Transactional(readOnly = true)
+    public List<IpRule> getAllIpRules() {
+        return ipRuleRepository.findAll();
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Transactional
     public IpRule addIpRule(IpRule rule) {
-        loadRulesFromFile();
-        rule.setId(UUID.randomUUID().toString());
-        rule.setCreatedAt(LocalDateTime.now());
-        rule.setStatus("active");
-        
         // 验证IP格式
         if (!isValidIpOrRange(rule)) {
             throw new IllegalArgumentException("无效的IP地址或IP范围格式");
         }
 
-        ipRules.add(rule);
-        saveRulesToFile();
-        updateNginxConfig();
-        return rule;
-    }
-
-    @PreAuthorize("hasRole('USER')")
-    public boolean deleteIpRule(String ruleId) {
-        loadRulesFromFile();
-        boolean removed = ipRules.removeIf(rule -> rule.getId().equals(ruleId));
-        if (removed) {
-            saveRulesToFile();
-            updateNginxConfig();
-        }
-        return removed;
-    }
-
-    @PreAuthorize("hasRole('USER')")
-    public IpRule updateIpRule(String ruleId, IpRule updatedRule) {
-        loadRulesFromFile();
-        for (int i = 0; i < ipRules.size(); i++) {
-            if (ipRules.get(i).getId().equals(ruleId)) {
-                updatedRule.setId(ruleId);
-                updatedRule.setCreatedAt(ipRules.get(i).getCreatedAt());
-                if (!isValidIpOrRange(updatedRule)) {
-                    throw new IllegalArgumentException("无效的IP地址或IP范围格式");
-                }
-                ipRules.set(i, updatedRule);
-                saveRulesToFile();
-                updateNginxConfig();
-                return updatedRule;
-            }
-        }
-        return null;
-    }
-
-    @PreAuthorize("hasRole('USER')")
-    public List<IpRule> batchAddIpRules(List<IpRule> rules) {
-        loadRulesFromFile();
-        List<IpRule> addedRules = new ArrayList<>();
-        for (IpRule rule : rules) {
-            rule.setId(UUID.randomUUID().toString());
-            rule.setCreatedAt(LocalDateTime.now());
-            rule.setStatus("active");
-            if (isValidIpOrRange(rule)) {
-                ipRules.add(rule);
-                addedRules.add(rule);
-            }
-        }
-        if (!addedRules.isEmpty()) {
-            saveRulesToFile();
-            updateNginxConfig();
-        }
-        return addedRules;
-    }
-
-    @PreAuthorize("hasRole('USER')")
-    public boolean batchDeleteIpRules(List<String> ruleIds) {
-        loadRulesFromFile();
-        boolean anyRemoved = false;
-        for (String ruleId : ruleIds) {
-            if (ipRules.removeIf(rule -> rule.getId().equals(ruleId))) {
-                anyRemoved = true;
-            }
-        }
-        if (anyRemoved) {
-            saveRulesToFile();
-            updateNginxConfig();
-        }
-        return anyRemoved;
-    }
-
-    private void loadRulesFromFile() {
+        rule.setCreatedAt(LocalDateTime.now());
+        rule.setStatus(IpRule.Status.active);
+        
+        IpRule savedRule = ipRuleRepository.save(rule);
         try {
-            Path filePath = Paths.get(BLOCK_IPS_FILE);
-            if (!Files.exists(filePath)) {
-                ipRules = new ArrayList<>();
-                return;
-            }
-            
-            List<String> lines = Files.readAllLines(filePath);
-            ipRules = lines.stream()
-                .filter(line -> line.startsWith("# RULE:"))
-                .map(this::parseRuleLine)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new RuntimeException("无法读取规则文件", e);
-        }
-    }
-
-    private void saveRulesToFile() {
-        try {
-            List<String> lines = new ArrayList<>();
-            for (IpRule rule : ipRules) {
-                lines.add(formatRuleLine(rule));
-                if (rule.getType().equals("single_ip")) {
-                    lines.add("deny " + rule.getIp() + ";");
-                } else if (rule.getType().equals("ip_range")) {
-                    lines.add("deny " + rule.getIpRange() + ";");
-                }
-            }
-            Files.write(Paths.get(BLOCK_IPS_FILE), lines);
-        } catch (IOException e) {
-            throw new RuntimeException("无法保存规则文件", e);
-        }
-    }
-
-    private String formatRuleLine(IpRule rule) {
-        return String.format("# RULE: {\"id\":\"%s\",\"type\":\"%s\",\"ip\":\"%s\",\"ipRange\":\"%s\",\"comment\":\"%s\",\"createdAt\":\"%s\",\"status\":\"%s\"}",
-            rule.getId(), rule.getType(), rule.getIp(), rule.getIpRange(), rule.getComment(), rule.getCreatedAt(), rule.getStatus());
-    }
-
-    private IpRule parseRuleLine(String line) {
-        try {
-            String json = line.substring(line.indexOf("{"));
-            // 这里需要添加JSON解析逻辑，可以使用Jackson或Gson
-            // 为简化示例，这里省略具体实现
-            return new IpRule(); // 实际应该返回解析后的对象
+            updateNginxConfig();
         } catch (Exception e) {
-            return null;
+            // 如果更新配置文件失败，回滚数据库事务
+            throw new RuntimeException("规则已保存到数据库，但更新Nginx配置文件失败: " + e.getMessage(), e);
         }
+        return savedRule;
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Transactional
+    public void deleteIpRule(String ruleId) {
+        ipRuleRepository.deleteById(ruleId);
+        try {
+            updateNginxConfig();
+        } catch (Exception e) {
+            throw new RuntimeException("规则已从数据库删除，但更新Nginx配置文件失败: " + e.getMessage(), e);
+        }
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Transactional
+    public IpRule updateIpRule(String ruleId, IpRule updatedRule) {
+        if (!isValidIpOrRange(updatedRule)) {
+            throw new IllegalArgumentException("无效的IP地址或IP范围格式");
+        }
+
+        IpRule existingRule = ipRuleRepository.findById(ruleId)
+            .orElseThrow(() -> new IllegalArgumentException("规则不存在"));
+
+        existingRule.setType(updatedRule.getType());
+        existingRule.setIp(updatedRule.getIp());
+        existingRule.setIpRange(updatedRule.getIpRange());
+        existingRule.setComment(updatedRule.getComment());
+        existingRule.setStatus(updatedRule.getStatus());
+
+        IpRule savedRule = ipRuleRepository.save(existingRule);
+        try {
+            updateNginxConfig();
+        } catch (Exception e) {
+            throw new RuntimeException("规则已更新到数据库，但更新Nginx配置文件失败: " + e.getMessage(), e);
+        }
+        return savedRule;
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Transactional
+    public List<IpRule> batchAddIpRules(List<IpRule> rules) {
+        List<IpRule> validRules = rules.stream()
+            .filter(this::isValidIpOrRange)
+            .peek(rule -> {
+                rule.setCreatedAt(LocalDateTime.now());
+                rule.setStatus(IpRule.Status.active);
+            })
+            .collect(Collectors.toList());
+
+        List<IpRule> savedRules = ipRuleRepository.saveAll(validRules);
+        updateNginxConfig();
+        return savedRules;
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Transactional
+    public void batchDeleteIpRules(List<String> ruleIds) {
+        ipRuleRepository.deleteAllById(ruleIds);
+        updateNginxConfig();
     }
 
     private boolean isValidIpOrRange(IpRule rule) {
@@ -215,26 +205,63 @@ public class IpManagerService {
 
     private void updateNginxConfig() {
         try {
-            String nginxConfigPath = nginxConfig.getNginxConfigPath();
-            List<String> configLines = Files.readAllLines(Paths.get(nginxConfigPath));
+            Path blockIpsPath = getBlockIpsFilePath();
+            logger.info("开始更新IP规则配置文件: {}", blockIpsPath);
+
+            List<IpRule> rules = ipRuleRepository.findAll();
+            List<String> configLines = new ArrayList<>();
             
-            // 检查是否已包含include语句
-            boolean hasInclude = configLines.stream()
-                .anyMatch(line -> line.trim().equals("include " + BLOCK_IPS_FILE + ";"));
-            
-            if (!hasInclude) {
-                // 在http块内添加include语句
-                int httpIndex = configLines.indexOf("http {");
-                if (httpIndex != -1) {
-                    configLines.add(httpIndex + 1, "    include " + BLOCK_IPS_FILE + ";");
-                    Files.write(Paths.get(nginxConfigPath), configLines);
+            // 添加配置文件头部注释
+            configLines.add("# IP规则配置文件 - 由系统自动生成");
+            configLines.add("# 最后更新时间: " + LocalDateTime.now());
+            configLines.add("");
+
+            // 添加每条规则
+            for (IpRule rule : rules) {
+                if (rule.getStatus() == IpRule.Status.active) {
+                    configLines.add("# " + rule.getComment());
+                    if ("single_ip".equals(rule.getType())) {
+                        configLines.add("deny " + rule.getIp() + ";");
+                    } else if ("ip_range".equals(rule.getType())) {
+                        configLines.add("deny " + rule.getIpRange() + ";");
+                    }
+                    configLines.add("");
                 }
             }
-            
-            // 重新加载Nginx配置
-            reloadNginx();
+
+            // 写入配置文件
+            try {
+                Files.write(blockIpsPath, configLines, StandardOpenOption.CREATE, 
+                    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+                logger.info("IP规则配置文件写入成功");
+            } catch (AccessDeniedException e) {
+                logger.error("无法写入IP规则配置文件: {}", e.getMessage());
+                throw new RuntimeException("无法写入IP规则配置文件，请检查文件权限: " + blockIpsPath, e);
+            }
+
+            // 使用NginxConfigService确保配置文件被包含
+            try {
+                nginxConfigService.ensureConfigIncluded(blockIpsPath.toString());
+                logger.info("成功更新Nginx配置文件，确保包含了IP规则文件");
+            } catch (Exception e) {
+                logger.error("更新Nginx配置文件失败: {}", e.getMessage());
+                throw new RuntimeException("更新Nginx配置文件失败: " + e.getMessage(), e);
+            }
+
+            // 仅在启用时尝试重新加载Nginx配置
+            if (nginxReloadEnabled) {
+                try {
+                    nginxConfigService.reloadNginx();
+                    logger.info("成功重新加载Nginx配置");
+                } catch (Exception e) {
+                    logger.warn("重新加载Nginx配置失败（不影响规则更新）: {}", e.getMessage());
+                }
+            } else {
+                logger.info("Nginx重载功能已禁用，跳过重载步骤");
+            }
         } catch (IOException e) {
-            throw new RuntimeException("无法更新Nginx配置", e);
+            logger.error("更新IP规则配置时发生错误: {}", e.getMessage());
+            throw new RuntimeException("更新IP规则配置时发生错误: " + e.getMessage(), e);
         }
     }
 

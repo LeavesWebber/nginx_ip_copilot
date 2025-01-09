@@ -13,6 +13,37 @@ const newRule = ref({
   comment: ''
 })
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  try {
+    // 尝试处理不同格式的日期字符串
+    const date = dateStr.includes('T') 
+      ? new Date(dateStr)  // ISO格式
+      : new Date(dateStr.replace(' ', 'T')); // MySQL格式
+    
+    if (isNaN(date.getTime())) return '-'
+    
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+  } catch (e) {
+    return '-'
+  }
+}
+
+const nginxStatus = ref({
+  status: '',
+  worker_processes: 0,
+  connections: 0,
+  config: ''
+})
+
 const fetchRules = async () => {
   try {
     // 检查是否设置了 Nginx 配置文件路径
@@ -70,7 +101,31 @@ const handleAddRule = async () => {
   }
 }
 
-onMounted(fetchRules)
+const fetchNginxStatus = async () => {
+  try {
+    const { data } = await store.dispatch('nginx/getStatus')
+    nginxStatus.value = data
+  } catch (error) {
+    console.error('获取Nginx状态失败:', error)
+  }
+}
+
+const handleDeleteRule = async (ruleId: string) => {
+  try {
+    await store.dispatch('ipRules/deleteRule', ruleId)
+    ElMessage.success('删除规则成功')
+    await fetchRules()
+  } catch (error) {
+    ElMessage.error('删除规则失败')
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([
+    fetchRules(),
+    fetchNginxStatus()
+  ])
+})
 </script>
 
 <template>
@@ -83,16 +138,47 @@ onMounted(fetchRules)
         </div>
       </template>
       
+      <el-alert
+        v-if="!nginxStatus?.status || nginxStatus.status !== 'running'"
+        title="Nginx 未运行"
+        type="warning"
+        description="当前 Nginx 服务未运行，IP 规则相关配置可能无法生效。请检查 Nginx 服务状态。"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 20px;"
+      />
+      
       <el-table :data="rules">
         <el-table-column label="IP地址">
           <template #default="scope">
             {{ scope.row.type === 'single_ip' ? scope.row.ip : scope.row.ip_range }}
           </template>
         </el-table-column>
-        <el-table-column prop="type" label="类型" />
+        <el-table-column prop="type" label="类型">
+          <template #default="scope">
+            {{ scope.row.type === 'single_ip' ? '单个IP' : 'IP范围' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="comment" label="备注" />
-        <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column prop="status" label="状态" />
+        <el-table-column prop="createdAt" label="创建时间">
+          <template #default="scope">
+            {{ formatDate(scope.row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 'active' ? 'success' : 'info'">
+              {{ scope.row.status === 'active' ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作">
+          <template #default="scope">
+            <el-button type="danger" size="small" @click="handleDeleteRule(scope.row.id)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 

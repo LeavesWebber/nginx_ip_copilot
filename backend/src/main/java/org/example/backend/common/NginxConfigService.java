@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
+import java.nio.file.StandardOpenOption;
 
 @Service
 public class NginxConfigService {
@@ -116,7 +117,7 @@ public class NginxConfigService {
             createBackup();
 
             // 写入新配置
-            Files.writeString(path, content);
+            Files.writeString(path, content, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
             logger.info("Successfully updated nginx config file: " + configPath);
 
         } catch (IOException e) {

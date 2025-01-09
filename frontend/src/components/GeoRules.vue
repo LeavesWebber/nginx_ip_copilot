@@ -17,6 +17,30 @@ const geoModuleStatus = ref({
   message: ''
 })
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  try {
+    // 尝试处理不同格式的日期字符串
+    const date = dateStr.includes('T') 
+      ? new Date(dateStr)  // ISO格式
+      : new Date(dateStr.replace(' ', 'T')); // MySQL格式
+    
+    if (isNaN(date.getTime())) return '-'
+    
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+  } catch (e) {
+    return '-'
+  }
+}
+
 const checkGeoModuleStatus = async () => {
   try {
     const response = await axios.get('/api/nginx/geo-module/status')
@@ -94,10 +118,10 @@ onMounted(async () => {
       </template>
       
       <el-alert
-        v-if="!geoModuleStatus.isEnabled"
-        title="GeoIP2模块未启用"
+        v-if="!geoModuleStatus.isInstalled || !geoModuleStatus.isEnabled"
+        title="Geo 模块未安装"
         type="warning"
-        description="当前GeoIP2模块未正确安装或启用，添加的规则可能不会生效。请在仪表盘中检查模块状态。"
+        description="当前 Geo 模块未正确安装或启用，地理位置配置可能无法生效。请在仪表盘中检查模块状态。"
         show-icon
         :closable="false"
         style="margin-bottom: 20px;"
@@ -106,8 +130,18 @@ onMounted(async () => {
       <el-table :data="geoRules">
         <el-table-column prop="country_code" label="国家代码" />
         <el-table-column prop="comment" label="备注" />
-        <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column prop="status" label="状态" />
+        <el-table-column prop="createdAt" label="创建时间">
+          <template #default="scope">
+            {{ formatDate(scope.row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 'active' ? 'success' : 'info'">
+              {{ scope.row.status === 'active' ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
             <el-button type="danger" size="small" 

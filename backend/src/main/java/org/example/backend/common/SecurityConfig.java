@@ -30,7 +30,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     new AntPathRequestMatcher("/api/auth/**"),
                     new AntPathRequestMatcher("/api/nginx/**"),
-                    new AntPathRequestMatcher("/api/geo-rules/**")
+                    new AntPathRequestMatcher("/api/geo-rules/**"),
+                    new AntPathRequestMatcher("/api/ip-rules/**")
                 ).permitAll()
                 .anyRequest().authenticated()
             );
