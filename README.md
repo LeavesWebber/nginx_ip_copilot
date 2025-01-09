@@ -4,18 +4,55 @@
 
 > 本文中的所有“用户”均指网站的管理者，我们设计的系统是一个提供给网站管理者的界面，使得其能够通过`ip:port`访问到这个管理界面并且进行系列操作
 
-## 初步构思
+# 项目使用方法
+## 1. 启动前端
+### 1.1 首先进入前端目录
+```bash
+cd frontend
+```
+
+### 1.2 安装所需要的包
+```bash
+npm install
+```
+**提示：前置条件**  
+项目需要 node 版本为 `22.04LTS`，你可以使用 `node -v` 查看当前版本。  
+若你不知道啥是 node 或者不懂怎么切换版本，参考  
+[我写的这篇教程](https://kiss1314.top/a9272d17422f/)
+
+### 1.3 启动开发服务器（我用了内置的 vite）
+```bash
+npm run dev
+```
+
+### 1.4 一些可能啰嗦的说明
+由于还没有对接后端，又不想把用户名和密码硬编码在程序里（这样做后患无穷）  
+所以我使用了 mock 模拟了后端的通信  
+比如用户名和密码，暂时都是 `admin`。  
+你可以在 [frontend/src/api/mock.ts](frontend/src/api/mock.ts) 里修改这些东西。
+
+## 2. 启动后端
+### 2.1 依赖导入
+先安装好 [pom.xml](/backend/pom.xml) 中的依赖项
+
+### 2.2 数据库
+请手动创建名称为 `backend` 的 mysql 数据库，首次运行会在自动数据库中建表。  
+后端端口，数据库名，数据库账号和密码都可以在 [application.properties](backend/src/main/resources/application.properties) 中手动输入
+
+### 2.3 运行
+运行的 Java 入口程序是 [BackendApplication.java](backend/src/main/java/org/example/backend/BackendApplication.java)  
+运行后，将监听本地的8088端口，等待并处理来自该端口的HTTP请求。
+
+
+## 项目构思
 
 ### 功能
 
 #### 用户登录模块
-
-userid; userps；  json
-
 ##### 实现方式
 
 方式1（高级）： mysql数据库匹配
-方式2（简单）： 维护一个存放账号密码的 json 文件
+方式2（简单）： 维护一个存放账号密码的 json 文件  
 
 #### 用户设置配置文件的路径
 
@@ -78,25 +115,6 @@ userid; userps；  json
 通过`include /path/to/block_ips.conf`把文件集成到原先设定的路径（比如`/etc/nginx/conf.d/mypapers.conf`）
 
 # 项目框架
-
-## 进度安排
-
-- 第一阶段：
-
-基础用户认证
-Nginx 配置文件管理
-简单的 IP 规则管理
-
-- 第二阶段：
-
-GeoIP 功能
-IP 规则批量管理
-基础数据可视化
-
-- 第三阶段：
-
-高危 IP 防护
-高级数据可视化
 
 ## 系统架构图
 
