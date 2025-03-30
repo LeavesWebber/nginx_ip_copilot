@@ -26,6 +26,7 @@ jobs:
           cd backend
           chmod +x mvnw
           ./mvnw clean install -DskipTests
+          ./mvnw dependency:copy-dependencies
           cd ..
       
       - name: SonarQube Scan
